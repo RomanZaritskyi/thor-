@@ -57,7 +57,7 @@ describe('adding exercises (FR-008, FR-009)', () => {
     await expect(repository.addExercise('  ЖИМ НОГАМИ ')).rejects.toThrow(DuplicateExerciseError)
   })
 
-  it('rejects a blank name', async () => {
+  it('rejects a blank name (FR-022)', async () => {
     await expect(build().addExercise('   ')).rejects.toThrow()
   })
 })

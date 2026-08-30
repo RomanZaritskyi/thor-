@@ -60,6 +60,17 @@
 - [x] T071 — `components/data-guard.tsx`, wired into the root layout · FR: FR-012
 - [x] T072 — `vite-plugin-pwa` with manifest, precache and `clientsClaim`; `initPwa` requests persistent storage · FR: FR-011
 
+## Closing the first audit
+
+`/analyze` found three behaviours built and tested with no requirement behind
+them — the drift the gate structurally cannot see, since it checks thatevery
+requirement has a test, not that every test has a requirement.
+
+- [x] T090 — Specify the picker's two empty states, which were already built · FR: FR-021
+- [x] T091 — Specify the blank-name refusal, already built · FR: FR-022
+- [x] T092 — Translate the not-found page and specify unresolved addresses · FR: FR-023
+- [x] T093 — Tag the untraceable tests; record `download.ts` and the real screen name in `plan.md` · FR: —
+
 ## Verification
 
 - [x] T080 — `pnpm verify` green · FR: —

@@ -111,6 +111,9 @@ the workout provider so `src/test/` stays feature-agnostic.
 | FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`     | unit test: export, record more, import, only the exported data remains |
 | FR-019 | `components/transfer-panel`                                  | component tests: the count is named; declining changes nothing         |
 | FR-020 | `model.ts::prefillFrom`                                      | unit tests; component test that the fields arrive filled               |
+| FR-021 | `components/exercise-picker` empty states                    | component test distinguishing both states                              |
+| FR-022 | `model.ts::exerciseNameSchema` + picker                      | unit test on the schema; component test that nothing is added          |
+| FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen` | e2e on an unknown URL; component test on an unknown exercise           |
 
 ## Complexity budget
 
@@ -139,6 +142,10 @@ the workout provider so `src/test/` stays feature-agnostic.
   personal log used in one city.
 - **A service worker serving stale assets.** Precaching can pin an old build.
   Registration uses auto-update so a new version takes effect on the next launch.
+- **Empty and error states arrive unspecified.** FR-021 to FR-023 were written
+  after the fact, when `/analyze` found three of them already built and tested
+  with no requirement behind them. They are the states nobody thinks to specify
+  and everybody eventually sees; the next feature should list them up front.
 - **FR-012 is easy to regress.** Any future code path that writes without first
   checking the load result quietly reintroduces exactly the data loss the
   requirement forbids. The guard lives in the repository, and its test asserts the

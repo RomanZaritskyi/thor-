@@ -92,8 +92,11 @@ test("deletes one of today's sets (FR-016)", async ({ page }) => {
   await expect(page.getByText('Сьогодні ще не було підходів.')).toBeVisible()
 })
 
-test('an unknown route shows the not-found page', async ({ page }) => {
+test('an unknown address explains itself and leads back (FR-023)', async ({ page }) => {
   await page.goto('/does-not-exist')
 
-  await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Сторінку не знайдено' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'До списку вправ' }).click()
+  await expect(page.getByRole('heading', { name: 'Вправи', level: 1 })).toBeVisible()
 })

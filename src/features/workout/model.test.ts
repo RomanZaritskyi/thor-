@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  exerciseNameSchema,
   groupSetsByDate,
   lastSession,
   normalizeExerciseName,
@@ -43,6 +44,22 @@ describe('normalizeExerciseName (FR-009)', () => {
 
   it('makes case and spacing variants collide', () => {
     expect(normalizeExerciseName('ЖИМ  ногами')).toBe(normalizeExerciseName(' жим ногами '))
+  })
+})
+
+describe('exerciseNameSchema (FR-022)', () => {
+  it('trims but keeps the capitalisation the user chose', () => {
+    expect(exerciseNameSchema.parse('  Жим Лежачи  ')).toBe('Жим Лежачи')
+  })
+
+  it('rejects a name that is blank once trimmed', () => {
+    expect(exerciseNameSchema.safeParse('').success).toBe(false)
+    expect(exerciseNameSchema.safeParse('   ').success).toBe(false)
+  })
+
+  it('rejects a name longer than the limit', () => {
+    expect(exerciseNameSchema.safeParse('x'.repeat(61)).success).toBe(false)
+    expect(exerciseNameSchema.safeParse('x'.repeat(60)).success).toBe(true)
   })
 })
 

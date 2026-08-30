@@ -43,7 +43,7 @@ describe('<ExercisePicker />', () => {
     expect(screen.queryByRole('link', { name: 'Тяга верхнього блоку' })).not.toBeInTheDocument()
   })
 
-  it('explains an empty list and a fruitless search differently', async () => {
+  it('explains an empty list and a fruitless search differently (FR-021)', async () => {
     const { user, unmount } = renderWorkout(<Harness />, {
       repository: createTestRepository({ exercises: [], sets: [] }),
     })
@@ -71,7 +71,7 @@ describe('<ExercisePicker />', () => {
     expect(await screen.findByRole('link', { name: 'Присід' })).toBeInTheDocument()
   })
 
-  it('clears the add field after a successful add, ready for the next', async () => {
+  it('clears the add field after a successful add, ready for the next (FR-008)', async () => {
     const { user } = renderWorkout(<Harness />, {
       repository: createTestRepository({ exercises: [], sets: [] }),
     })
@@ -84,7 +84,7 @@ describe('<ExercisePicker />', () => {
     expect(field).toHaveValue('')
   })
 
-  it('adds a second exercise right after the first, without losing form state', async () => {
+  it('adds a second exercise right after the first, without losing form state (FR-008)', async () => {
     const { user } = renderWorkout(<Harness />, {
       repository: createTestRepository({ exercises: [], sets: [] }),
     })
@@ -107,7 +107,7 @@ describe('<ExercisePicker />', () => {
     expect(screen.getAllByRole('link', { name: /ногами/i })).toHaveLength(1)
   })
 
-  it('refuses a blank name without calling the repository', async () => {
+  it('refuses a blank name without calling the repository (FR-022)', async () => {
     const repository = createTestRepository({ exercises: [], sets: [] })
     const { user } = renderWorkout(<Harness />, { repository })
 

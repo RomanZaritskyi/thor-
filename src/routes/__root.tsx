@@ -48,10 +48,12 @@ function RootLayout() {
 function NotFound() {
   return (
     <div className="space-y-4 py-16 text-center">
-      <h1 className="text-2xl font-semibold">Page not found</h1>
-      <p className="text-muted-foreground">This route does not exist.</p>
+      <h1 className="text-2xl font-semibold">{ui.notFound.title}</h1>
+      <p className="text-muted-foreground">{ui.notFound.body}</p>
       <Button asChild variant="outline">
-        <Link to="/">Back home</Link>
+        <Link to="/" search={{ q: '' }}>
+          {ui.notFound.back}
+        </Link>
       </Button>
     </div>
   )

@@ -102,8 +102,11 @@ features/*/model.ts      pure rules and schemas, no framework imports  (innermos
 - Query by role, label and accessible name. `getByTestId` is for ordering
   assertions only — where a test must read items in DOM order — never as a
   substitute for a real accessible name.
-- Name the requirement in the test title: `it('… (FR-004)')`. `pnpm spec:check`
-  greps for those ids and fails a shipped spec whose requirement no test names.
+- Name the requirement in the test title: `it('… (FR-004)')`, or on the `describe`
+  when a whole block serves one requirement. `pnpm spec:check` greps for those
+  ids and fails a shipped spec whose requirement no test names — but it cannot
+  see the reverse, so a test with no id is a requirement nobody wrote down.
+  `/analyze` is what catches that.
 - `renderApp` from `src/test/utils` supplies the providers every feature needs.
   A feature that injects dependencies wraps it with its own provider rather than
   teaching `src/test/` about that feature.

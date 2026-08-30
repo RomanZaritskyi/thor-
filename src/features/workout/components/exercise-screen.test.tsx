@@ -38,7 +38,7 @@ function summaries() {
 }
 
 describe('<ExerciseScreen />', () => {
-  it('names the exercise', async () => {
+  it('names the exercise (FR-003)', async () => {
     render()
 
     expect(await screen.findByRole('heading', { name: 'Жим ногами' })).toBeInTheDocument()
@@ -156,12 +156,13 @@ describe('<ExerciseScreen />', () => {
     expect(screen.queryByRole('button', { name: /Видалити підхід/ })).not.toBeInTheDocument()
   })
 
-  it('reports an exercise that does not exist', async () => {
+  it('explains an exercise that does not exist, and offers the way back (FR-023)', async () => {
     const repository = createTestRepository({ exercises: [], sets: [] })
     renderWorkout(<ExerciseScreen exerciseId="99999999-9999-4999-8999-999999999999" />, {
       repository,
     })
 
     expect(await screen.findByText(/Такої вправи немає/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'До списку вправ' })).toBeInTheDocument()
   })
 })
