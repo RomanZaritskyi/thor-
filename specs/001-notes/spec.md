@@ -4,7 +4,7 @@
 - **Status:** shipped <!-- draft | clarified | planned | in-progress | shipped -->
 - **Created:** 2026-08-30
 
-> Constitution III: this file says WHAT and WHY. No framework names, file paths,
+> Constitution IV: this file says WHAT and WHY. No framework names, file paths,
 > library choices or schemas — those belong in `plan.md`.
 
 ## Problem

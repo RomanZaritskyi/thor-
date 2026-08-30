@@ -1,6 +1,6 @@
 # Project constitution
 
-**Version 1.0.0 · Ratified 2026-08-30**
+**Version 1.1.0 · Ratified 2026-08-30**
 
 The rules every spec, plan and change in this repository must obey. When a plan
 conflicts with the constitution, the constitution wins — or the constitution gets
@@ -18,7 +18,47 @@ is not a requirement — it is an accident waiting to be "fixed" by the next per
 - If the code and the spec disagree, that is a bug in one of them. Decide which,
   then fix that one. Never silently keep both.
 
-## II. Requirements are testable or they are not requirements
+## II. One spec per feature; changed behaviour is edited in place
+
+A feature gets exactly one folder under `specs/`. Before scaffolding a new one,
+ask the only question that matters:
+
+> **Does every requirement in the existing specs stay true after this change?**
+
+**Yes — new folder.** The change adds behaviour without contradicting anything
+already written. `pnpm spec:new "<name>"` takes the next number.
+
+**No — edit the spec that is now wrong.** Loosening a limit, dropping something
+from `Out of scope`, changing what a screen does: that is the same feature
+evolving, and it is fixed where it lives, in the same commit as the code and the
+test. A second folder describing the same behaviour differently leaves two
+documents claiming to be the source of truth, and no way to tell which one is.
+
+A spec therefore describes the **present**, never a history of changes. There is
+no "previously this returned…" in a spec. Git already holds that:
+
+```bash
+git log -p specs/001-notes/spec.md
+```
+
+When a feature is removed, or its requirements are wholly replaced by a later
+spec, set the status to `superseded` and add a line naming the replacement:
+
+```markdown
+- **Status:** superseded
+- **Superseded by:** 007-notes-v2
+```
+
+`pnpm spec:check` then stops holding it to traceability — its code is gone — but
+still requires the pointer to resolve. Deleting the folder outright is also fine;
+what is not fine is leaving a shipped spec describing behaviour that no longer
+exists.
+
+The gate reads each feature folder on its own. It cannot see that spec 004
+contradicts spec 001 — only `/analyze` and a reader can. That is precisely why
+the rule above is a rule and not a preference.
+
+## III. Requirements are testable or they are not requirements
 
 A requirement that cannot fail a test is a wish.
 
@@ -29,14 +69,14 @@ A requirement that cannot fail a test is a wish.
   blocks `/plan` until resolved. Guessing silently is the failure mode this whole
   workflow exists to prevent.
 
-## III. Specs say WHAT and WHY; plans say HOW
+## IV. Specs say WHAT and WHY; plans say HOW
 
 `spec.md` contains no framework names, file paths, library choices or schemas.
 It must stay readable by someone who does not know this codebase. All technical
 decisions live in `plan.md`, where they can be challenged and replaced without
 touching the definition of correct.
 
-## IV. Acceptance criteria become tests, before the implementation
+## V. Acceptance criteria become tests, before the implementation
 
 Each `FR-xxx` maps to at least one automated test that names it. Write the test,
 watch it fail for the intended reason, then implement.
@@ -45,7 +85,7 @@ watch it fail for the intended reason, then implement.
 - User-facing flows → component tests through the accessibility tree.
 - Cross-cutting journeys and persistence → one Playwright test, not ten.
 
-## V. Domain logic stays pure and framework-free
+## VI. Domain logic stays pure and framework-free
 
 Business rules live in plain modules — no React, no router, no fetch. They take
 data and return data. This is what makes them cheap to test and cheap to keep
@@ -55,7 +95,7 @@ correct.
   and are injected. `now()` and `createId()` are parameters, never globals.
 - Dependencies point inward: UI → feature → domain. Never the reverse.
 
-## VI. The type system is the first line of the spec
+## VII. The type system is the first line of the spec
 
 `strict` is on, and so are `noUncheckedIndexedAccess`, `noUnusedLocals` and
 `noUnusedParameters`.
@@ -65,7 +105,7 @@ correct.
   schema; parse, don't assume.
 - A `@ts-expect-error` needs a comment saying what will remove it.
 
-## VII. Accessibility is a requirement, not a polish pass
+## VIII. Accessibility is a requirement, not a polish pass
 
 Tests query by role, label and accessible name. If a control cannot be found that
 way, that is a defect in the component, not in the test.
@@ -73,7 +113,7 @@ way, that is a defect in the component, not in the test.
 - Every input has a real `<label>`. Every icon-only button has an accessible name.
 - Errors are announced (`role="alert"`) and tied to their field.
 
-## VIII. Simplicity gate
+## IX. Simplicity gate
 
 Every new dependency, abstraction layer or configuration option must be justified
 in `plan.md` under **Complexity budget**, in one sentence, against the simpler
@@ -81,7 +121,7 @@ alternative it beats. No justification, no addition.
 
 Three or fewer moving parts per feature unless the spec forces more.
 
-## IX. Definition of done
+## X. Definition of done
 
 A change is done when **all** of these hold:
 

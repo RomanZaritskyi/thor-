@@ -22,6 +22,14 @@ before doing anything non-trivial — it is the ruleset, not a style guide.
 Skipping a step is allowed only for a change with no user-visible behaviour
 (a refactor, a dependency bump, a typo). Everything else starts at `/specify`.
 
+**One spec per feature (Constitution II).** Before scaffolding a new folder, ask
+whether every requirement already written stays true. If yes, `pnpm spec:new`.
+If no, the change contradicts an existing spec — edit that spec in place, in the
+same commit as the code and the test. A spec describes the present, not a history
+of changes; git holds the history. A removed feature's spec becomes
+`Status: superseded` plus `Superseded by: NNN-slug`, which `pnpm spec:check`
+requires to resolve.
+
 ## Commands
 
 ```bash

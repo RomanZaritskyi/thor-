@@ -5,13 +5,13 @@
 
 ## Constitution check
 
-| Principle                      | How this plan complies                                                                                          | Deviation + justification                                                           |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| IV. Tests before code          | Ordering and validation rules get unit tests; each flow gets a component test; one Playwright pass per journey. | —                                                                                   |
-| V. Pure, framework-free domain | `model.ts` is plain functions over plain data. Storage, clock and id generation are injected interfaces.        | —                                                                                   |
-| VI. Types and parsing          | Stored JSON and URL search params are parsed with a schema, never trusted.                                      | —                                                                                   |
-| VII. Accessibility             | Labelled inputs, accessible names on icon buttons, errors as `role="alert"` tied to their field.                | —                                                                                   |
-| VIII. Simplicity budget        | No new runtime dependency beyond what the starter already carries.                                              | The form component opts out of the React Compiler (`'use no memo'`); see **Risks**. |
+| Principle                       | How this plan complies                                                                                          | Deviation + justification                                                           |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| V. Tests before code            | Ordering and validation rules get unit tests; each flow gets a component test; one Playwright pass per journey. | —                                                                                   |
+| VI. Pure, framework-free domain | `model.ts` is plain functions over plain data. Storage, clock and id generation are injected interfaces.        | —                                                                                   |
+| VII. Types and parsing          | Stored JSON and URL search params are parsed with a schema, never trusted.                                      | —                                                                                   |
+| VIII. Accessibility             | Labelled inputs, accessible names on icon buttons, errors as `role="alert"` tied to their field.                | —                                                                                   |
+| IX. Simplicity budget           | No new runtime dependency beyond what the starter already carries.                                              | The form component opts out of the React Compiler (`'use no memo'`); see **Risks**. |
 
 ## Approach
 

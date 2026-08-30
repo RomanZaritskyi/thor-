@@ -14,7 +14,7 @@ Read the spec, the plan, and `specs/templates/tasks-template.md`.
 ## Rules
 
 - **Tests come first.** For every `FR-xxx`, a failing test task precedes the
-  implementation task that satisfies it (Constitution IV). A plan whose task list
+  implementation task that satisfies it (Constitution V). A plan whose task list
   starts with implementation is not spec-driven; it is spec-shaped.
 - Every task is one commit-sized unit with a verifiable end state. "Improve the
   notes module" is not a task. "Sort pinned notes above unpinned in

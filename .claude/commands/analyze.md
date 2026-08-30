@@ -23,8 +23,14 @@ Read-only. Report; do not fix.
 5. **Plan → reality.** Do the modules in `plan.md` match what is on disk?
 6. **Constitution.** Any violation: `any`, unparsed trust boundaries, business
    logic inside components, controls unreachable by role or label.
-7. **Hygiene.** Unresolved `[NEEDS CLARIFICATION]`, stale statuses, tasks ticked
-   with no corresponding code.
+7. **Spec ↔ spec (Constitution II).** `pnpm spec:check` reads each folder in
+   isolation and cannot see this: two specs describing the same behaviour
+   differently, a later spec that silently overrides an earlier requirement, or a
+   `superseded` spec whose replacement never absorbed its requirements. You can.
+   This is the drift the gate structurally cannot catch, so look for it here.
+8. **Hygiene.** Unresolved `[NEEDS CLARIFICATION]`, stale statuses, a `shipped`
+   spec describing behaviour that no longer exists, tasks ticked with no
+   corresponding code.
 
 ## Report
 

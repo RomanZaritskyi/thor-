@@ -33,7 +33,7 @@ Follow `specs/templates/plan-template.md`.
 - Fill **Complexity budget** for every new dependency or layer. Prefer what the
   repo already has: the stack is deliberately small.
 - Push business rules into pure modules; keep React, the router and storage at
-  the edges (Constitution V).
+  the edges (Constitution VI).
 
 ## When you are done
 

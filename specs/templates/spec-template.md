@@ -1,10 +1,13 @@
 # Feature: <NAME>
 
 - **ID:** <NNN-slug>
-- **Status:** draft <!-- draft | clarified | planned | in-progress | shipped -->
+- **Status:** draft <!-- draft | clarified | planned | in-progress | shipped | superseded -->
+
+<!-- When superseded, add: - **Superseded by:** NNN-slug  (Constitution II) -->
+
 - **Created:** <YYYY-MM-DD>
 
-> Constitution III: this file says WHAT and WHY. No framework names, file paths,
+> Constitution IV: this file says WHAT and WHY. No framework names, file paths,
 > library choices or schemas — those belong in `plan.md`.
 
 ## Problem

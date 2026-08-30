@@ -14,7 +14,7 @@
 
 ## Tests first
 
-Write these and watch them fail before writing the implementation (Constitution IV).
+Write these and watch them fail before writing the implementation (Constitution V).
 
 - [ ] T010 — <failing unit test for the rule> · FR: FR-001
 - [ ] T011 [P] — <failing component test for the flow> · FR: FR-002

@@ -32,6 +32,21 @@ rewritten and `spec.md` does not move — because the definition of correct did 
 change. If a technology name creeps into `spec.md`, that boundary is gone and the
 spec starts aging with the stack.
 
+## One folder per feature, not per change
+
+A folder is a feature, not a changelog entry. When a later change contradicts
+something already specified — a limit loosened, a line dropped from `Out of
+scope` — the existing spec is what gets edited, in the same commit as the code.
+Adding a second folder for the same behaviour produces two documents each
+claiming to be the source of truth, and nothing to arbitrate between them.
+
+So a spec always reads as _"this is how it works"_, never _"this is how it used
+to work, and then…"_. The history is already in `git log -p specs/001-notes/spec.md`.
+
+Features do get removed. That spec becomes `Status: superseded` with a
+`Superseded by:` pointer; the gate then stops demanding tests for its
+requirements but still insists the pointer resolves, so nothing is left dangling.
+
 ## The numbering
 
 Requirements get stable ids: `FR-001`, `FR-002`. They appear in the spec table,

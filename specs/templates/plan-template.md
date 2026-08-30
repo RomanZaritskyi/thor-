@@ -8,13 +8,13 @@
 
 ## Constitution check
 
-| Principle                      | How this plan complies | Deviation + justification |
-| ------------------------------ | ---------------------- | ------------------------- |
-| IV. Tests before code          |                        |                           |
-| V. Pure, framework-free domain |                        |                           |
-| VI. Types and parsing          |                        |                           |
-| VII. Accessibility             |                        |                           |
-| VIII. Simplicity budget        |                        |                           |
+| Principle                       | How this plan complies | Deviation + justification |
+| ------------------------------- | ---------------------- | ------------------------- |
+| V. Tests before code            |                        |                           |
+| VI. Pure, framework-free domain |                        |                           |
+| VII. Types and parsing          |                        |                           |
+| VIII. Accessibility             |                        |                           |
+| IX. Simplicity budget           |                        |                           |
 
 A deviation is allowed; an unexplained one is not.
 

@@ -15,6 +15,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const specsDir = join(root, 'specs')
 
 const REQUIRED_SECTIONS = ['## Problem', '## Outcome', '## Requirements']
+const KNOWN_STATUSES = ['draft', 'clarified', 'planned', 'in-progress', 'shipped', 'superseded']
 const TEST_GLOBS = ['src', 'e2e']
 
 const findings = []
@@ -75,8 +76,44 @@ for (const feature of features) {
     if (!spec.includes(section)) report('error', feature, `spec.md has no "${section}" section`)
   }
 
-  const unresolved = [...spec.matchAll(/\[NEEDS CLARIFICATION:([^\]]*)\]/g)]
   const status = /^- \*\*Status:\*\*\s*(\S+)/m.exec(spec)?.[1] ?? 'unknown'
+
+  if (!KNOWN_STATUSES.includes(status)) {
+    report(
+      'error',
+      feature,
+      `unknown status "${status}" — expected one of: ${KNOWN_STATUSES.join(', ')}`,
+    )
+  }
+
+  // Constitution II: a superseded spec's code is gone, so traceability no longer
+  // applies. What must survive is the pointer to whatever replaced it — a
+  // dangling "superseded" is exactly the orphan document the rule exists to stop.
+  if (status === 'superseded') {
+    const pointer = /^- \*\*Superseded by:\*\*\s*(\S+)/m.exec(spec)?.[1]
+
+    if (pointer === undefined) {
+      report(
+        'error',
+        feature,
+        'superseded spec must name its replacement: `- **Superseded by:** NNN-slug`',
+      )
+    } else {
+      const target = pointer
+        .replace(/[`[\]()]/g, '')
+        .replace(/^specs\//, '')
+        .replace(/\/.*$/, '')
+
+      if (!existsSync(join(specsDir, target))) {
+        report('error', feature, `superseded by "${target}", which does not exist under specs/`)
+      }
+    }
+
+    console.log(`${feature}: superseded${pointer === undefined ? '' : ` by ${pointer}`}`)
+    continue
+  }
+
+  const unresolved = [...spec.matchAll(/\[NEEDS CLARIFICATION:([^\]]*)\]/g)]
 
   for (const match of unresolved) {
     const level = status === 'draft' ? 'warn' : 'error'

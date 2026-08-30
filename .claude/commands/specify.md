@@ -13,10 +13,22 @@ Write a specification for: **$ARGUMENTS**
 3. Skim existing `specs/*/spec.md` to match the house tone and to notice overlap
    with a feature that already exists.
 
-## Create the folder
+## Decide first: new folder, or an edit? (Constitution II)
 
-Run `node scripts/new-feature.mjs "<short-slug>"`. It picks the next number,
-copies the templates, and prints the paths. Do not hand-roll the numbering.
+Read the existing `specs/*/spec.md` and answer one question:
+
+> Does every requirement already written stay true after this change?
+
+- **Yes** → new folder. Run `node scripts/new-feature.mjs "<short-slug>"`; it
+  picks the next number, copies the templates and prints the paths. Do not
+  hand-roll the numbering.
+- **No** → **stop, and do not scaffold anything.** The change contradicts a spec
+  that already exists — loosening a limit, removing an `Out of scope` line,
+  redefining what a screen does. Say which spec and which `FR-xxx` is now wrong,
+  and edit that file instead. Two folders describing the same behaviour leave two
+  documents claiming to be the source of truth.
+
+Say out loud which branch you took and why, before writing anything.
 
 ## Rules for the content
 
