@@ -1,7 +1,7 @@
 # Plan: Workout Log
 
 - **Spec:** `specs/002-workout-log/spec.md`
-- **Status:** approved
+- **Status:** implemented
 
 ## Constitution check
 

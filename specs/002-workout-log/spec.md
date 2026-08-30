@@ -1,7 +1,7 @@
 # Feature: Workout Log
 
 - **ID:** 002-workout-log
-- **Status:** planned <!-- draft | clarified | planned | in-progress | shipped | superseded -->
+- **Status:** shipped <!-- draft | clarified | planned | in-progress | shipped | superseded -->
 
 <!-- When superseded, add: - **Superseded by:** NNN-slug  (Constitution II) -->
 

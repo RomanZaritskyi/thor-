@@ -3,6 +3,7 @@ import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router
 
 import { Devtools } from '@/components/devtools'
 import { Button } from '@/components/ui/button'
+import { DataGuard } from '@/features/workout/components/data-guard'
 import { ui } from '@/features/workout/strings'
 
 export interface RouterContext {
@@ -22,11 +23,21 @@ function RootLayout() {
           <Link to="/" search={{ q: '' }} className="font-semibold tracking-tight">
             {ui.appName}
           </Link>
+          <Link
+            to="/data"
+            className="ml-auto rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            activeProps={{ className: 'bg-accent text-accent-foreground' }}
+          >
+            {ui.transfer.title}
+          </Link>
         </nav>
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
-        <Outlet />
+        {/* FR-012: nothing below this renders while the log is unreadable. */}
+        <DataGuard>
+          <Outlet />
+        </DataGuard>
       </main>
 
       <Devtools />

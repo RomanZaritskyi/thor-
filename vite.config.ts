@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -11,6 +12,36 @@ export default defineConfig({
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react({ compiler: true }),
     tailwindcss(),
+    // FR-011: the app must *open* with no network, which needs a precached
+    // service worker. Disabled under test so Vitest and Playwright never race a
+    // worker install.
+    VitePWA({
+      disable: process.env.VITEST === 'true',
+      registerType: 'autoUpdate',
+      // 'script' injects a plain navigator.serviceWorker.register(), which keeps
+      // workbox-window out of the dependency list — we need registration, not a
+      // programmatic update API.
+      injectRegister: 'script',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        navigateFallback: 'index.html',
+        // Take control of the page that registered it. Without this the app only
+        // becomes offline-capable on the *second* launch — which on a gym floor
+        // is the launch that matters.
+        clientsClaim: true,
+      },
+      manifest: {
+        name: 'Thor — журнал тренувань',
+        short_name: 'Thor',
+        description: 'Що я робив у цій вправі минулого разу',
+        lang: 'uk',
+        start_url: '/',
+        display: 'standalone',
+        background_color: '#0a0a0a',
+        theme_color: '#0a0a0a',
+        icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+      },
+    }),
   ],
   resolve: {
     alias: {
@@ -44,6 +75,7 @@ export default defineConfig({
         'src/components/ui/**',
         'src/components/devtools.tsx',
         'src/lib/query-client.ts',
+        'src/lib/pwa.ts',
       ],
       thresholds: {
         lines: 80,

@@ -4,6 +4,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { WorkoutRepositoryProvider } from '@/features/workout/repository-provider'
+import { initPwa } from '@/lib/pwa'
 import { queryClient } from '@/lib/query-client'
 import '@/styles/globals.css'
 
@@ -22,6 +23,8 @@ declare module '@tanstack/react-router' {
     router: typeof router
   }
 }
+
+initPwa()
 
 const rootElement = document.getElementById('root')
 
