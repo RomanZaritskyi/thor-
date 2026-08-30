@@ -127,6 +127,18 @@ for (const feature of features) {
     continue
   }
 
+  // A requirement cited in Out of scope or an edge case but never defined in the
+  // table is a dangling reference: the id reads as real and traces to nothing.
+  for (const cited of new Set([...spec.matchAll(/\bFR-\d{3}\b/g)].map((match) => match[0]))) {
+    if (!ids.includes(cited)) {
+      report(
+        'error',
+        feature,
+        `${cited} is referenced in spec.md but never defined in the Requirements table`,
+      )
+    }
+  }
+
   const tasksPath = join(specsDir, feature, 'tasks.md')
   const tasks = existsSync(tasksPath) ? await readFile(tasksPath, 'utf8') : ''
   const planPath = join(specsDir, feature, 'plan.md')
