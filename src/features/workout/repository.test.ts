@@ -62,6 +62,18 @@ describe('adding exercises (FR-008, FR-009)', () => {
   })
 })
 
+describe('today (FR-015)', () => {
+  it('reports the local day of the same clock that dates a set', async () => {
+    const repository = build({ exercises: [legPress], sets: [] })
+
+    const day = repository.today()
+    const entry = await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+
+    expect(day).toBe('2026-03-01')
+    expect(entry.date).toBe(day)
+  })
+})
+
 describe('recording sets (FR-005, FR-013, FR-015)', () => {
   it('records a set against an exercise, dated today', async () => {
     const repository = build({ exercises: [legPress], sets: [] })

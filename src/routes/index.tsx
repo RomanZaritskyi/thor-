@@ -1,21 +1,27 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
 
-export const Route = createFileRoute('/')({
-  component: Home,
+import { ExercisePicker } from '@/features/workout/components/exercise-picker'
+
+const searchSchema = z.object({
+  q: z.string().catch('').default(''),
 })
 
-function Home() {
+export const Route = createFileRoute('/')({
+  validateSearch: searchSchema,
+  component: PickerRoute,
+})
+
+function PickerRoute() {
+  const { q } = Route.useSearch()
+  const navigate = useNavigate({ from: Route.fullPath })
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-3xl font-semibold tracking-tight">Thor</h1>
-      <p className="max-w-prose text-muted-foreground">
-        A workout log for training without a programme: pick whichever machine is free, see what you
-        lifted on it last time, record today&rsquo;s sets.
-      </p>
-      <p className="max-w-prose text-sm text-muted-foreground">
-        Nothing is built yet. The specification lives in <code>specs/002-workout-log/spec.md</code>;
-        run <code>/plan</code> to design it.
-      </p>
-    </div>
+    <ExercisePicker
+      query={q}
+      onQueryChange={(next) => {
+        void navigate({ search: { q: next }, replace: true, resetScroll: false })
+      }}
+    />
   )
 }

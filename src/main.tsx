@@ -3,6 +3,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
+import { WorkoutRepositoryProvider } from '@/features/workout/repository-provider'
 import { queryClient } from '@/lib/query-client'
 import '@/styles/globals.css'
 
@@ -31,7 +32,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <WorkoutRepositoryProvider>
+        <RouterProvider router={router} />
+      </WorkoutRepositoryProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

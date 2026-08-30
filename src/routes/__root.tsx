@@ -3,6 +3,7 @@ import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router
 
 import { Devtools } from '@/components/devtools'
 import { Button } from '@/components/ui/button'
+import { ui } from '@/features/workout/strings'
 
 export interface RouterContext {
   queryClient: QueryClient
@@ -18,8 +19,8 @@ function RootLayout() {
     <div className="flex min-h-dvh flex-col">
       <header className="border-b">
         <nav className="mx-auto flex w-full max-w-3xl items-center gap-1 px-4 py-3">
-          <Link to="/" className="font-semibold tracking-tight">
-            Thor
+          <Link to="/" search={{ q: '' }} className="font-semibold tracking-tight">
+            {ui.appName}
           </Link>
         </nav>
       </header>

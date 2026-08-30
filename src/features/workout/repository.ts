@@ -44,6 +44,13 @@ export class ImmutablePastError extends Error {
 }
 
 export interface WorkoutRepository {
+  /**
+   * The current local day, from the same clock every write uses. Screens must ask
+   * for it rather than calling `new Date()` themselves: two clocks disagree at
+   * midnight, and the disagreement would put a set on a day the screen is not
+   * showing.
+   */
+  today(): string
   load(): Promise<LoadResult>
   addExercise(name: string): Promise<Exercise>
   recordSet(exerciseId: string, draft: unknown): Promise<SetEntry>
@@ -79,6 +86,8 @@ export function createWorkoutRepository({
   }
 
   return {
+    today: () => todayKey(now()),
+
     load: () => store.load(),
 
     addExercise: async (rawName) => {
