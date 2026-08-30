@@ -1,0 +1,3 @@
+# SPA fallback. Static files are matched first, so /sw.js, /manifest.webmanifest
+# and /assets/* are served as themselves and never swallowed by this rule.
+/*  /index.html  200

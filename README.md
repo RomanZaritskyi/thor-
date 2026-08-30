@@ -86,6 +86,24 @@ training without a programme — you use whichever machine is free, so the quest
 the app answers is "what did I lift on this last time", and its history is
 organised by exercise rather than by date.
 
+## Deploying
+
+The app is a static build with a service worker, so any static host works. It
+expects to live at the **root of a domain** — a subdirectory would need `base`,
+the router's `basepath` and the manifest's `scope` changed together, and getting
+any of them wrong breaks offline rather than the page you are looking at.
+
+- **Vercel** — import the repository; `vercel.json` sets the build, the SPA
+  rewrite and the cache headers.
+- **Cloudflare Pages / Netlify** — build command `pnpm build`, output `dist`.
+  `public/_redirects` and `public/_headers` carry the same rules.
+
+Both keep `sw.js` and the manifest uncacheable so a new build can take over, and
+cache the content-hashed assets forever.
+
+Serving over HTTPS matters: the service worker behind offline support, and
+installing to a phone's home screen, both require a secure context.
+
 ## Decisions worth knowing
 
 - **TypeScript is pinned to 6.0.x.** `typescript-eslint@8` supports
