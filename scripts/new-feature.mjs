@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 /**
- * Scaffolds the next numbered feature folder from the templates.
+ * Scaffolds the next numbered feature folder.
  *
  *   node scripts/new-feature.mjs "note tags"
- *   -> specs/002-note-tags/{spec,plan,tasks}.md
+ *   -> specs/002-note-tags/spec.md
+ *
+ * Only spec.md: each step of the loop creates the file it produces, so `plan.md`
+ * arrives with /plan and `tasks.md` with /tasks. Laying down empty templates up
+ * front would leave the traceability gate reading placeholder `FR-001` lines as
+ * if they were real coverage.
  */
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
@@ -64,18 +69,17 @@ await mkdir(featureDir)
 
 const today = new Date().toISOString().slice(0, 10)
 
-for (const kind of ['spec', 'plan', 'tasks']) {
-  const template = await readFile(join(templatesDir, `${kind}-template.md`), 'utf8')
-  const filled = template
+const template = await readFile(join(templatesDir, 'spec-template.md'), 'utf8')
+
+await writeFile(
+  join(featureDir, 'spec.md'),
+  template
     .replaceAll('<NAME>', titleize(slug))
     .replaceAll('<NNN-slug>', id)
-    .replaceAll('<YYYY-MM-DD>', today)
+    .replaceAll('<YYYY-MM-DD>', today),
+)
 
-  await writeFile(join(featureDir, `${kind}.md`), filled)
-}
-
-console.log(`Created specs/${id}/`)
-console.log(`  spec.md   <- start here, then /clarify`)
-console.log(`  plan.md`)
-console.log(`  tasks.md`)
+console.log(`Created specs/${id}/spec.md`)
+console.log(`\nNext: fill it in, then /clarify.`)
+console.log(`plan.md and tasks.md are created by /plan and /tasks.`)
 console.log(`\nSuggested branch: git switch -c feat/${id}`)
