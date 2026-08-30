@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run test:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm run typecheck:*)",
+      "Bash(pnpm verify:*)",
+      "Bash(pnpm run verify:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm e2e:*)",
+      "Bash(pnpm run e2e:*)",
+      "Bash(pnpm spec:check)",
+      "Bash(pnpm run spec:check)",
+      "Bash(pnpm spec:new:*)",
+      "Bash(pnpm exec vitest:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm exec eslint:*)",
+      "Bash(pnpm exec prettier:*)",
+      "Bash(pnpm exec playwright:*)",
+      "Bash(node scripts/new-feature.mjs:*)",
+      "Bash(node scripts/check-specs.mjs)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)"
+    ]
+  }
+}
