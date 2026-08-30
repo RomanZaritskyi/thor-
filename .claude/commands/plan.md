@@ -1,6 +1,6 @@
 ---
 description: Derive a technical plan from a clarified spec
-argument-hint: [spec id, e.g. 001-notes — defaults to the newest clarified spec]
+argument-hint: [spec id, e.g. 002-workout-log — defaults to the newest clarified spec]
 allowed-tools: Bash(pnpm:*), Bash(git status:*), Read, Write, Edit, Glob, Grep
 ---
 

@@ -70,12 +70,16 @@ features/*/model.ts      pure rules and schemas, no framework imports  (innermos
 ## Stack constraints worth knowing before you get bitten
 
 - **React Compiler is on** (`react({ compiler: true })` in `vite.config.ts`).
-  It assumes the Rules of React. `react-hook-form`'s `register()` mutates form
-  state during render, which the compiler is free to memoise away — the symptom
-  is a form that validates as empty after its first successful submit.
-  `src/features/notes/components/note-form.tsx` opts out with `'use no memo'`.
-  Any new component built on `register()` needs the same directive **and** a test
-  that submits twice.
+  It assumes the Rules of React, and `react-hook-form` breaks them: `register()`
+  mutates form state during render, which the compiler is free to memoise away.
+  The symptom is specific and easy to misread — the form works once, then every
+  submit after a `reset()` validates as though the fields were empty. Any
+  component built on `register()` needs `'use no memo'` as the first statement in
+  its body **and** a test that submits twice; one submit passes either way. This
+  was found the expensive way, and it will apply to the set-recording form.
+- **Reset a form from an effect, not from the submit handler.** react-hook-form
+  finalises its state after the handler resolves, so a `reset()` called inside is
+  clobbered. Use `useEffect` on `formState.isSubmitSuccessful`.
 - **TypeScript is pinned to 6.0.x, not 7.** `typescript-eslint@8` declares
   `typescript <6.1.0`; on TS 7 the type-aware lint rules stop running. Bump only
   once typescript-eslint supports it, and confirm `pnpm lint` still reports
@@ -86,8 +90,9 @@ features/*/model.ts      pure rules and schemas, no framework imports  (innermos
   is required by TanStack Router and `react-refresh/only-export-components` is
   disabled for `src/routes/**` because of it.
 - **Coverage thresholds scope to logic**, not wiring — `src/routes/**`,
-  `main.tsx`, devtools and `src/components/ui/**` are excluded and covered by
-  Playwright instead. Do not "fix" a coverage failure by widening that list.
+  `main.tsx`, devtools, the QueryClient factory and `src/components/ui/**` are
+  excluded and covered by Playwright instead. Do not "fix" a coverage failure by
+  widening that list.
 - **Playwright** uses its own downloaded browsers (`pnpm exec playwright install`).
   On an image that ships Chromium, point at it with
   `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome pnpm e2e`.
@@ -95,12 +100,15 @@ features/*/model.ts      pure rules and schemas, no framework imports  (innermos
 ## Testing
 
 - Query by role, label and accessible name. `getByTestId` is for ordering
-  assertions only (`note-title`, `note-card`), never as a substitute for a real
-  accessible name.
+  assertions only — where a test must read items in DOM order — never as a
+  substitute for a real accessible name.
 - Name the requirement in the test title: `it('… (FR-004)')`. `pnpm spec:check`
   greps for those ids and fails a shipped spec whose requirement no test names.
-- Inject a repository via `renderApp(ui, { repository })` from `src/test/utils`.
-  Never let a test touch real `localStorage` state left by another test.
+- `renderApp` from `src/test/utils` supplies the providers every feature needs.
+  A feature that injects dependencies wraps it with its own provider rather than
+  teaching `src/test/` about that feature.
+- Never let a test touch persisted state left by another test. Inject an
+  in-memory adapter instead of reaching for the real one.
 - Never weaken a test to make it pass. A failing test is information.
 
 ## Conventions
@@ -108,7 +116,5 @@ features/*/model.ts      pure rules and schemas, no framework imports  (innermos
 - No default exports except where a framework demands one.
 - `import type` for type-only imports (enforced).
 - Comments explain _why_, not _what_. The code already says what.
-- The reference feature (`specs/001-notes/` plus `src/features/notes/`) exists to
-  demonstrate the loop. Deleting it is a supported operation: remove those two
-  directories, `src/routes/notes/`, `e2e/notes.spec.ts`, and the nav link in
-  `src/routes/__root.tsx`.
+- `src/features/` is empty. The first feature is `specs/002-workout-log/`, which
+  is clarified and waiting on `/plan`.

@@ -1,6 +1,6 @@
 ---
 description: Resolve the open questions in a spec before planning starts
-argument-hint: [spec id, e.g. 001-notes — defaults to the newest draft]
+argument-hint: [spec id, e.g. 002-workout-log — defaults to the newest draft]
 allowed-tools: Bash(git status:*), Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 

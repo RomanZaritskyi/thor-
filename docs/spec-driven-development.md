@@ -21,7 +21,7 @@ disagreed with cheaply.
 Each feature is a folder under `specs/`, created by `pnpm spec:new "<name>"`:
 
 ```
-specs/001-notes/
+specs/002-workout-log/
 ├── spec.md    WHAT and WHY   — no technology, readable by a non-developer
 ├── plan.md    HOW            — architecture, contracts, rejected alternatives
 └── tasks.md   IN WHAT ORDER  — commit-sized units, tests before implementation
@@ -41,7 +41,7 @@ Adding a second folder for the same behaviour produces two documents each
 claiming to be the source of truth, and nothing to arbitrate between them.
 
 So a spec always reads as _"this is how it works"_, never _"this is how it used
-to work, and then…"_. The history is already in `git log -p specs/001-notes/spec.md`.
+to work, and then…"_. The history is already in `git log -p specs/002-workout-log/spec.md`.
 
 Features do get removed. That spec becomes `Status: superseded` with a
 `Superseded by:` pointer; the gate then stops demanding tests for its
@@ -99,8 +99,12 @@ writing one, that is a signal to stop and ask what decision was actually made.
 
 ## Worked example
 
-`specs/001-notes/` is a real feature with eight requirements, carried end to end.
-Read `spec.md` first, then `plan.md`'s **Risks** section — it documents a genuine
-incompatibility between the React Compiler and `react-hook-form` that the loop
-surfaced as a failing test rather than as a production bug. That is the argument
-for the whole exercise, in one paragraph.
+`specs/002-workout-log/` is the first feature to go through the loop. Read
+`spec.md`, then compare its `Open questions` section against the seven markers
+the first draft carried: each one was a place the request genuinely did not say,
+and each was answered by its author rather than guessed by the agent. Two of them
+— how an exercise is identified across sessions, and whether history is scoped to
+a specific machine — would have quietly decided the shape of the whole product
+had they been assumed instead of asked.
+
+That is the argument for the ceremony, in one paragraph.

@@ -1,6 +1,6 @@
 ---
 description: Break an approved plan into ordered, verifiable tasks
-argument-hint: [spec id, e.g. 001-notes — defaults to the newest planned feature]
+argument-hint: [spec id, e.g. 002-workout-log — defaults to the newest planned feature]
 allowed-tools: Bash(git status:*), Read, Write, Edit, Glob, Grep
 ---
 
@@ -17,8 +17,8 @@ Read the spec, the plan, and `specs/templates/tasks-template.md`.
   implementation task that satisfies it (Constitution V). A plan whose task list
   starts with implementation is not spec-driven; it is spec-shaped.
 - Every task is one commit-sized unit with a verifiable end state. "Improve the
-  notes module" is not a task. "Sort pinned notes above unpinned in
-  `model.ts::sortNotes`, proven by `model.test.ts`" is.
+  history module" is not a task. "Return the most recent session for an exercise
+  in `model.ts::lastSession`, proven by `model.test.ts`" is.
 - Tag every task with the requirements it serves: `· FR: FR-001, FR-003`.
   Infrastructure tasks use `· FR: —`.
 - Mark `[P]` only where the files genuinely do not overlap.

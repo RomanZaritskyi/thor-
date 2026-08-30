@@ -59,9 +59,9 @@ is supposed to be, because that is decided in the gym, by what is free.
   several sessions is a later question, not this one.
 - Editing anything already recorded, and deleting anything from an earlier day
   (FR-016).
-- Reading an exported file back in. The export is a readable record, not a
-  restore button: after a lost phone the data can be recovered by hand but not by
-  the app. Accepted deliberately for a first version.
+- Merging an imported file into existing data. Import replaces (FR-018);
+  reconciling two divergent histories needs a rule for what counts as the same
+  set, and that rule would silently be wrong sometimes.
 
 ## User scenarios
 
@@ -107,6 +107,8 @@ is supposed to be, because that is decided in the gym, by what is free.
 | FR-015 | Recording requires no start or finish action. A set joins the sets already recorded for that exercise on the current calendar date, after them in order.                                                                                       | Two sets recorded hours apart on the same day appear as that day's first and second set.                                |
 | FR-016 | A set recorded on the current date can be deleted. Sets from earlier dates cannot be changed or removed, so the history behind a progression decision is stable.                                                                               | Deleting today's second of three sets leaves the first and third, in order; a set from a previous day offers no delete. |
 | FR-017 | Everything recorded can be written out to a file on demand, in a form that stays readable without this app.                                                                                                                                    | Exporting after recording produces a file containing those exercises, dates, weights, reps and notes.                   |
+| FR-018 | An exported file can be read back in, restoring exactly what it holds. The import replaces everything currently recorded rather than merging into it.                                                                                          | Exporting, recording more sets, then importing that file leaves only the exported data.                                 |
+| FR-019 | Import states how much existing data will be lost and proceeds only on confirmation. Declining changes nothing.                                                                                                                                | With 40 sets recorded, importing warns that 40 will be replaced; declining leaves all 40 in place.                      |
 
 ## Edge cases
 
@@ -138,7 +140,8 @@ is supposed to be, because that is decided in the gym, by what is free.
 - **No network in the critical path.** Gym floors have poor reception; nothing in
   the flow above may wait on a server.
 - **The data lives on the device.** A lost or replaced phone loses whatever was
-  not exported; the export (FR-017) is the only mitigation, and it is manual.
+  not exported. Export and import (FR-017, FR-018) make that recoverable, but
+  both are manual: nothing backs anything up on its own.
 
 ## Open questions
 

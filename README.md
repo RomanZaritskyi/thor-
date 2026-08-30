@@ -52,7 +52,7 @@ Each command is a Claude Code slash command in `.claude/commands/`.
 
 - `specs/constitution.md` — the rules every spec and plan obeys.
 - `docs/spec-driven-development.md` — what the workflow is and when to skip it.
-- `specs/001-notes/` — a worked example, carried end to end.
+- `specs/002-workout-log/` — the first feature: clarified, waiting on `/plan`.
 
 Requirements carry stable ids (`FR-001`) that appear in the spec, the plan, the
 task list and the test titles. `pnpm spec:check` fails the build when a shipped
@@ -78,21 +78,22 @@ Dependencies point inward: routes → components → queries → repository → 
 model. `model.ts` imports no framework, which is what makes the rules cheap to
 test.
 
-## The reference feature
+## What is here
 
-`src/features/notes/` implements `specs/001-notes/spec.md` — eight requirements
-covering validation, filtering, ordering, deletion and persistence. It exists to
-demonstrate the loop and is designed to be deleted: remove `src/features/notes/`,
-`src/routes/notes/`, `specs/001-notes/`, `e2e/notes.spec.ts` and the nav link in
-`src/routes/__root.tsx`.
+The stack, the workflow, and one clarified specification. `src/features/` is
+empty on purpose: `specs/002-workout-log/spec.md` describes a workout log for
+training without a programme — you use whichever machine is free, so the question
+the app answers is "what did I lift on this last time", and its history is
+organised by exercise rather than by date.
 
 ## Decisions worth knowing
 
 - **TypeScript is pinned to 6.0.x.** `typescript-eslint@8` supports
   `typescript <6.1.0`; on TS 7 the type-aware lint rules silently stop running.
-- **React Compiler is enabled**, with one documented opt-out: `note-form.tsx`
-  carries `'use no memo'` because `react-hook-form`'s `register()` mutates state
-  during render. See `specs/001-notes/plan.md` → **Risks**.
+- **React Compiler is enabled.** Any component using `react-hook-form`'s
+  `register()` must opt out with `'use no memo'`: `register()` mutates state
+  during render, so the compiler may memoise it away and the form silently
+  validates as empty after its first submit. See `CLAUDE.md`.
 - **Coverage thresholds apply to logic, not wiring.** Route modules and the entry
   point are excluded and covered by Playwright instead.
 

@@ -38,7 +38,7 @@ A spec therefore describes the **present**, never a history of changes. There is
 no "previously this returned…" in a spec. Git already holds that:
 
 ```bash
-git log -p specs/001-notes/spec.md
+git log -p specs/002-workout-log/spec.md
 ```
 
 When a feature is removed, or its requirements are wholly replaced by a later
@@ -46,7 +46,7 @@ spec, set the status to `superseded` and add a line naming the replacement:
 
 ```markdown
 - **Status:** superseded
-- **Superseded by:** 007-notes-v2
+- **Superseded by:** 007-workout-log-v2
 ```
 
 `pnpm spec:check` then stops holding it to traceability — its code is gone — but
@@ -63,8 +63,8 @@ the rule above is a rule and not a preference.
 A requirement that cannot fail a test is a wish.
 
 - Write requirements as observable outcomes, not implementation notes.
-  - Good: _FR-004 — pinned notes appear above unpinned notes._
-  - Bad: _the list uses a sort function._
+  - Good: _FR-003 — selecting an exercise shows its most recent session._
+  - Bad: _the history view calls a lookup function._
 - Anything genuinely undecided is marked `[NEEDS CLARIFICATION: question]` and
   blocks `/plan` until resolved. Guessing silently is the failure mode this whole
   workflow exists to prevent.

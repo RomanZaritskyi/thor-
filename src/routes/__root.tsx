@@ -18,16 +18,8 @@ function RootLayout() {
     <div className="flex min-h-dvh flex-col">
       <header className="border-b">
         <nav className="mx-auto flex w-full max-w-3xl items-center gap-1 px-4 py-3">
-          <Link to="/" className="mr-4 font-semibold tracking-tight">
+          <Link to="/" className="font-semibold tracking-tight">
             Thor
-          </Link>
-          <Link
-            to="/notes"
-            search={{ q: '' }}
-            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            activeProps={{ className: 'bg-accent text-accent-foreground' }}
-          >
-            Notes
           </Link>
         </nav>
       </header>
