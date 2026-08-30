@@ -1,7 +1,7 @@
 # Feature: Workout Log
 
 - **ID:** 002-workout-log
-- **Status:** clarified <!-- draft | clarified | planned | in-progress | shipped | superseded -->
+- **Status:** planned <!-- draft | clarified | planned | in-progress | shipped | superseded -->
 
 <!-- When superseded, add: - **Superseded by:** NNN-slug  (Constitution II) -->
 
@@ -109,6 +109,7 @@ is supposed to be, because that is decided in the gym, by what is free.
 | FR-017 | Everything recorded can be written out to a file on demand, in a form that stays readable without this app.                                                                                                                                    | Exporting after recording produces a file containing those exercises, dates, weights, reps and notes.                   |
 | FR-018 | An exported file can be read back in, restoring exactly what it holds. The import replaces everything currently recorded rather than merging into it.                                                                                          | Exporting, recording more sets, then importing that file leaves only the exported data.                                 |
 | FR-019 | Import states how much existing data will be lost and proceeds only on confirmation. Declining changes nothing.                                                                                                                                | With 40 sets recorded, importing warns that 40 will be replaced; declining leaves all 40 in place.                      |
+| FR-020 | Opening an exercise prefills the weight and reps fields from its most recent set — today's if there is one, otherwise the last session's. Repeating a set is then one action; changing the load is one edit.                                   | With 60 kg × 10 last recorded, opening the exercise shows `60` and `10` already in the fields.                          |
 
 ## Edge cases
 
@@ -134,7 +135,8 @@ is supposed to be, because that is decided in the gym, by what is free.
 
 ## Non-functional constraints
 
-- **One-handed, on a phone, in a gym.** The lookup is the first thing on screen
+- **One-handed, on a phone, in a gym.** Repeating a set must not mean typing two
+  numbers from scratch (FR-020). The lookup is the first thing on screen
   and the recording controls are reachable with a thumb. Precision tapping and
   typing long strings are both failure modes here.
 - **No network in the critical path.** Gym floors have poor reception; nothing in
