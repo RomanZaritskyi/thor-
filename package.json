@@ -24,7 +24,8 @@
     "e2e:ui": "playwright test --ui",
     "verify": "run-s format:check lint typecheck spec:check test build",
     "spec:new": "node scripts/new-feature.mjs",
-    "spec:check": "node scripts/check-specs.mjs"
+    "spec:check": "node scripts/check-specs.mjs",
+    "check:deploy": "node scripts/check-deploy.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.1.23",

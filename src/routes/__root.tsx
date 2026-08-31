@@ -20,7 +20,7 @@ function RootLayout() {
     <div className="flex min-h-dvh flex-col">
       <header className="border-b">
         <nav className="mx-auto flex w-full max-w-3xl items-center gap-1 px-4 py-3">
-          <Link to="/" search={{ q: '' }} className="font-semibold tracking-tight">
+          <Link to="/" className="font-semibold tracking-tight">
             {ui.appName}
           </Link>
           <Link
@@ -51,9 +51,7 @@ function NotFound() {
       <h1 className="text-2xl font-semibold">{ui.notFound.title}</h1>
       <p className="text-muted-foreground">{ui.notFound.body}</p>
       <Button asChild variant="outline">
-        <Link to="/" search={{ q: '' }}>
-          {ui.notFound.back}
-        </Link>
+        <Link to="/">{ui.notFound.back}</Link>
       </Button>
     </div>
   )

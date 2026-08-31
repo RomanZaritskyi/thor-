@@ -101,6 +101,21 @@ any of them wrong breaks offline rather than the page you are looking at.
 Both keep `sw.js` and the manifest uncacheable so a new build can take over, and
 cache the content-hashed assets forever.
 
+After a deploy, check what a host can silently get wrong:
+
+```bash
+pnpm check:deploy https://your-deployment
+```
+
+It verifies the SPA fallback, that `sw.js` is never served stale, that the
+manifest is reachable, and that hashed assets are cached long. Run against a local
+`vite preview` the last check fails by design — preview serves everything
+`no-cache`; the long-cache header comes from the host config.
+
+The one thing it cannot check is the requirement it exists to protect: install the
+app to a phone's home screen, turn on airplane mode, launch it from the icon and
+record a set.
+
 Serving over HTTPS matters: the service worker behind offline support, and
 installing to a phone's home screen, both require a secure context.
 

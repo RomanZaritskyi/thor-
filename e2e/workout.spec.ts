@@ -39,6 +39,9 @@ async function recordSet(page: Page, weight: string, reps: string) {
 test('opens straight onto exercise selection (FR-001)', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Вправи', level: 1 })).toBeVisible()
   await expect(page.getByLabel('Пошук вправи')).toBeVisible()
+
+  // No search is happening, so the address carries no search term.
+  await expect(page).not.toHaveURL(/\?q=/)
 })
 
 test('adds an exercise, records sets, and keeps them across a reload (FR-005, FR-008, FR-010)', async ({
@@ -78,6 +81,11 @@ test('filters the exercise list through the URL (FR-002)', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Присід' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Станова' })).toBeHidden()
   await expect(page).toHaveURL(/\?q=/)
+
+  // Clearing it takes the term back out of the address rather than leaving `?q=`.
+  await page.getByLabel('Пошук вправи').clear()
+  await expect(page.getByRole('link', { name: 'Станова' })).toBeVisible()
+  await expect(page).not.toHaveURL(/\?q=/)
 })
 
 test("deletes one of today's sets (FR-016)", async ({ page }) => {

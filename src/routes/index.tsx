@@ -3,8 +3,11 @@ import { z } from 'zod'
 
 import { ExercisePicker } from '@/features/workout/components/exercise-picker'
 
+// Optional rather than defaulting to '': a default would be serialised into the
+// URL on every visit, making `/?q=` the canonical home address for a search that
+// is not happening.
 const searchSchema = z.object({
-  q: z.string().catch('').default(''),
+  q: z.string().optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/')({
@@ -18,9 +21,13 @@ function PickerRoute() {
 
   return (
     <ExercisePicker
-      query={q}
+      query={q ?? ''}
       onQueryChange={(next) => {
-        void navigate({ search: { q: next }, replace: true, resetScroll: false })
+        void navigate({
+          search: { q: next === '' ? undefined : next },
+          replace: true,
+          resetScroll: false,
+        })
       }}
     />
   )

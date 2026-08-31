@@ -38,9 +38,7 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
       <div className="space-y-4">
         <p className="text-muted-foreground">{ui.exercise.notFound}</p>
         <Button asChild variant="outline">
-          <Link to="/" search={{ q: '' }}>
-            {ui.exercise.back}
-          </Link>
+          <Link to="/">{ui.exercise.back}</Link>
         </Button>
       </div>
     )
@@ -57,7 +55,6 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
       <div className="space-y-3">
         <Link
           to="/"
-          search={{ q: '' }}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="size-4" />
