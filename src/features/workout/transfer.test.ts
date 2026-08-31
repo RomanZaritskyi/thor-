@@ -73,37 +73,6 @@ describe('parseImport (FR-018)', () => {
     expect(parseImport(broken).ok).toBe(false)
   })
 
-  it('reads a version 1 file, reinterpreting its sets as one run per day', () => {
-    // The export is a lifeboat; refusing an older one would sink it.
-    const legacy = JSON.stringify({
-      version: 1,
-      exportedAt: '2026-03-02T08:00:00.000Z',
-      exercises: [exercise],
-      sets: [
-        {
-          id: '33333333-3333-4333-8333-333333333333',
-          exerciseId: exercise.id,
-          date: '2026-02-20',
-          loggedAt: '2026-02-20T10:00:00.000Z',
-          weightKg: 60,
-          reps: 10,
-        },
-      ],
-    })
-    let n = 0
-    const result = parseImport(
-      legacy,
-      () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`,
-    )
-
-    expect(result.ok).toBe(true)
-    expect(result.ok && result.data.blocks).toHaveLength(1)
-    expect(result.ok && result.data.blocks[0]?.closedAt).toBe('2026-02-20T10:00:00.000Z')
-    expect(result.ok && result.data.sets[0]?.blockId).toBe(
-      result.ok ? result.data.blocks[0]?.id : '',
-    )
-  })
-
   it('rejects a version it does not understand, instead of guessing', () => {
     const future = JSON.stringify({
       version: 99,

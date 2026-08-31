@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  blocksFromLegacySets,
   currentBlock,
   exerciseNameSchema,
   isBlockOpen,
@@ -13,7 +12,7 @@ import {
   setsInBlock,
   todayKey,
 } from './model'
-import type { Block, Exercise, LegacySetEntry, SetEntry } from './model'
+import type { Block, Exercise, SetEntry } from './model'
 
 function exercise(name: string, id = name): Exercise {
   return {
@@ -224,67 +223,6 @@ describe('previousBlock and currentBlock (FR-003, FR-024)', () => {
     const other = block({ id: 'x', exerciseId: 'other' })
 
     expect(previousBlock([other], [set({ blockId: 'x' })], EXERCISE, TODAY)).toBeUndefined()
-  })
-})
-
-describe('blocksFromLegacySets (migration)', () => {
-  let n = 0
-  const ids = () => `block-${String(++n)}`
-
-  function legacy(overrides: Partial<LegacySetEntry> = {}): LegacySetEntry {
-    return {
-      id: 's1',
-      exerciseId: EXERCISE,
-      date: TODAY,
-      loggedAt: '2026-03-01T10:00:00.000Z',
-      weightKg: 60,
-      reps: 10,
-      ...overrides,
-    }
-  }
-
-  it('reads one run per exercise per day, as that data actually was', () => {
-    n = 0
-    const { blocks, sets } = blocksFromLegacySets(
-      [
-        legacy({ id: 'a', loggedAt: '2026-03-01T10:00:00.000Z' }),
-        legacy({ id: 'b', loggedAt: '2026-03-01T10:05:00.000Z' }),
-        legacy({ id: 'c', date: '2026-02-20', loggedAt: '2026-02-20T10:00:00.000Z' }),
-      ],
-      ids,
-    )
-
-    expect(blocks).toHaveLength(2)
-    expect(sets).toHaveLength(3)
-    expect(new Set(sets.filter((e) => e.date === TODAY).map((e) => e.blockId)).size).toBe(1)
-  })
-
-  it('splits runs of different exercises on the same day', () => {
-    n = 0
-    const { blocks } = blocksFromLegacySets(
-      [legacy({ id: 'a' }), legacy({ id: 'b', exerciseId: 'e2' })],
-      ids,
-    )
-
-    expect(blocks).toHaveLength(2)
-  })
-
-  it('closes what it migrates — finished history, not something to append to', () => {
-    n = 0
-    const { blocks } = blocksFromLegacySets(
-      [
-        legacy({ id: 'a', loggedAt: '2026-03-01T10:00:00.000Z' }),
-        legacy({ id: 'b', loggedAt: '2026-03-01T10:05:00.000Z' }),
-      ],
-      ids,
-    )
-
-    expect(blocks[0]?.startedAt).toBe('2026-03-01T10:00:00.000Z')
-    expect(blocks[0]?.closedAt).toBe('2026-03-01T10:05:00.000Z')
-  })
-
-  it('handles an empty log', () => {
-    expect(blocksFromLegacySets([], ids)).toEqual({ blocks: [], sets: [] })
   })
 })
 

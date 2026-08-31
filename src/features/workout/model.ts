@@ -36,59 +36,9 @@ export const setEntrySchema = z.object({
   note: z.string().max(NOTE_MAX).optional(),
 })
 
-/** How sets looked before blocks existed: one run per exercise per day, implied. */
-export const legacySetEntrySchema = setEntrySchema.omit({ blockId: true })
-
 export type Exercise = z.infer<typeof exerciseSchema>
 export type Block = z.infer<typeof blockSchema>
 export type SetEntry = z.infer<typeof setEntrySchema>
-export type LegacySetEntry = z.infer<typeof legacySetEntrySchema>
-
-/**
- * Reads pre-block data as what it actually was: one closed block per exercise per
- * day. Used both by the database upgrade and by importing an older export, so
- * the rule that reinterprets someone's training history exists exactly once and
- * is tested on its own.
- */
-export function blocksFromLegacySets(
-  legacy: readonly LegacySetEntry[],
-  createId: () => string,
-): { blocks: Block[]; sets: SetEntry[] } {
-  const byRun = new Map<string, LegacySetEntry[]>()
-
-  for (const entry of legacy) {
-    const key = `${entry.exerciseId}|${entry.date}`
-    const run = byRun.get(key)
-
-    if (run === undefined) byRun.set(key, [entry])
-    else run.push(entry)
-  }
-
-  const blocks: Block[] = []
-  const sets: SetEntry[] = []
-
-  for (const run of byRun.values()) {
-    const ordered = [...run].sort((a, b) => a.loggedAt.localeCompare(b.loggedAt))
-    const first = ordered[0]
-    const last = ordered.at(-1)
-
-    if (first === undefined || last === undefined) continue
-
-    const block: Block = {
-      id: createId(),
-      exerciseId: first.exerciseId,
-      date: first.date,
-      startedAt: first.loggedAt,
-      // Closed: these runs are finished history, not something to append to.
-      closedAt: last.loggedAt,
-    }
-
-    blocks.push(block)
-    for (const entry of ordered) sets.push({ ...entry, blockId: block.id })
-  }
-
-  return { blocks, sets }
-}
 
 /** What the user types when recording. Trimmed and bounded before it reaches the store. */
 export const setDraftSchema = z.object({

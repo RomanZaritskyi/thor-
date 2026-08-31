@@ -80,8 +80,7 @@ nothing to compare against.
 
 - [x] T100 — Failing unit tests for `isBlockOpen`, `setsInBlock`, `previousBlock`, `currentBlock`, including a block emptied by deletion · FR: FR-003, FR-006, FR-015
 - [x] T101 [P] — Failing unit tests for `prefillFrom` over blocks · FR: FR-020
-- [x] T102 [P] — Failing unit tests for `blocksFromLegacySets` · FR: —
-- [x] T103 — Failing store tests: closing a block survives reopening; a seeded version 1 database still reads cleanly and gains one closed block per exercise-day · FR: FR-010, FR-024
+- [x] T103 — Failing store tests: closing a block survives reopening; a seeded version 1 database still reads cleanly · FR: FR-010, FR-024
 - [x] T104 — Failing repository tests: consecutive sets share a block, finishing starts a new one, finishing twice is not an error, other exercises are untouched, and finishing is refused while unreadable · FR: FR-012, FR-024
 - [x] T105 — Failing component tests: finishing makes the run the one to build on, no finish when nothing is open, deleting from a block finished today · FR: FR-016, FR-024
 
@@ -90,9 +89,18 @@ nothing to compare against.
 - [x] T110 — `model.ts`: `Block`, `blockId` on sets, block selectors, legacy migration · FR: FR-003, FR-015, FR-020
 - [x] T111 — `store.ts`: blocks object store, `closeBlock`, IndexedDB upgrade from version 1 · FR: FR-010, FR-024
 - [x] T112 — `repository.ts`: open a block on first set, `finishExercise` · FR: FR-015, FR-024
-- [x] T113 — `transfer.ts`: version 2 envelope, reading a version 1 file through the same migration · FR: FR-017, FR-018
+- [x] T113 — `transfer.ts`: version 2 envelope · FR: FR-017, FR-018
 - [x] T114 — Exercise screen: previous block, block in progress, finish button · FR: FR-003, FR-016, FR-024
 - [x] T115 — Playwright: the same exercise twice in a day · FR: FR-024
+
+## Dropping the backwards-compatibility path
+
+Built for a population that does not exist: one user, testing, with a handful of
+stored sets. Removed rather than carried.
+
+- [x] T120 — Delete `blocksFromLegacySets`, the legacy schema, the version 1 import path and the tests that existed only for them · FR: —
+- [x] T121 — Replace the reinterpreting upgrade with one that discards unreadable sets and keeps the exercises, and test that it does exactly that · FR: FR-010, FR-012
+- [x] T122 — Correct `plan.md`, which claimed the data was migrated · FR: —
 
 ## Verification
 

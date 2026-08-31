@@ -1,12 +1,6 @@
 import { openDB, type IDBPDatabase } from 'idb'
 
-import {
-  blocksFromLegacySets,
-  blockSchema,
-  exerciseSchema,
-  legacySetEntrySchema,
-  setEntrySchema,
-} from './model'
+import { blockSchema, exerciseSchema, setEntrySchema } from './model'
 import type { WorkoutData } from './transfer'
 
 export const DB_NAME = 'thor-workout'
@@ -97,23 +91,15 @@ export function createIndexedDbStore(name: string = DB_NAME): WorkoutStore {
           store.createIndex('exerciseId', 'exerciseId')
         }
 
-        // Version 1 had no blocks. Its sets were one run per exercise per day, so
-        // that is what they become — closed, because they are finished history.
-        // Reinterpreting somebody's training log is not something to improvise,
-        // which is why the rule lives in one tested function.
-        if (oldVersion === 1) {
-          void (async () => {
-            const rows = await tx.objectStore(SETS).getAll()
-            const legacy = rows.flatMap((row) => {
-              const parsed = legacySetEntrySchema.safeParse(row)
-              return parsed.success ? [parsed.data] : []
-            })
-            const { blocks, sets } = blocksFromLegacySets(legacy, () => crypto.randomUUID())
-
-            for (const block of blocks) await tx.objectStore(BLOCKS).put(block)
-            for (const entry of sets) await tx.objectStore(SETS).put(entry)
-          })()
-        }
+        // Version 1 had no blocks, so none of its sets can be read under the
+        // current schema. There is one user, the data is what he recorded while
+        // testing, and he chose to lose it rather than carry a reinterpreting
+        // migration for a population that does not exist. Exercises are
+        // untouched — their shape never changed, so the list of machines stays.
+        // `void`, not `await`: the upgrade callback is synchronous, and queuing
+        // the request is enough — IndexedDB holds the transaction open until it
+        // completes.
+        if (oldVersion === 1) void tx.objectStore(SETS).clear()
       },
     })
   }

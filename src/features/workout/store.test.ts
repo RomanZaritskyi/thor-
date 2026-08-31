@@ -170,9 +170,9 @@ describe('IndexedDB store, unreadable data (FR-012)', () => {
   })
 })
 
-describe('upgrading a version 1 database (migration)', () => {
+describe('upgrading a version 1 database', () => {
   /** Writes a database exactly as version 1 left it: sets, and no blocks. */
-  async function seedVersion1(name: string, legacySets: Record<string, unknown>[]): Promise<void> {
+  async function seedVersion1(name: string): Promise<void> {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(name, 1)
       request.onupgradeneeded = () => {
@@ -191,7 +191,14 @@ describe('upgrading a version 1 database (migration)', () => {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(['exercises', 'sets'], 'readwrite')
       tx.objectStore('exercises').put(exercise)
-      for (const entry of legacySets) tx.objectStore('sets').put(entry)
+      tx.objectStore('sets').put({
+        id: '11111111-1111-4111-8111-111111111101',
+        exerciseId: exercise.id,
+        date: '2026-02-20',
+        loggedAt: '2026-02-20T10:00:00.000Z',
+        weightKg: 60,
+        reps: 10,
+      })
       tx.oncomplete = () => {
         resolve()
       }
@@ -203,50 +210,23 @@ describe('upgrading a version 1 database (migration)', () => {
     db.close()
   }
 
-  const legacySet = (id: string, date: string, loggedAt: string) => ({
-    id,
-    exerciseId: exercise.id,
-    date,
-    loggedAt,
-    weightKg: 60,
-    reps: 10,
-  })
-
-  it('reads cleanly rather than reporting data it cannot understand', async () => {
-    // The failure this guards against is severe: without the upgrade, every
-    // existing set fails the schema and the app declares the log unreadable.
-    await seedVersion1(dbName, [
-      legacySet('11111111-1111-4111-8111-111111111101', '2026-02-20', '2026-02-20T10:00:00.000Z'),
-    ])
+  it('reads cleanly rather than declaring the log unreadable', async () => {
+    // Version 1 sets carry no blockId, so left in place every one of them would
+    // fail the schema and trigger the FR-012 screen on a working app.
+    await seedVersion1(dbName)
 
     expect((await idb().load()).status).toBe('ok')
   })
 
-  it('turns each exercise-day into one closed block, keeping every set', async () => {
-    await seedVersion1(dbName, [
-      legacySet('11111111-1111-4111-8111-111111111101', '2026-02-20', '2026-02-20T10:00:00.000Z'),
-      legacySet('11111111-1111-4111-8111-111111111102', '2026-02-20', '2026-02-20T10:05:00.000Z'),
-      legacySet('11111111-1111-4111-8111-111111111103', '2026-02-27', '2026-02-27T10:00:00.000Z'),
-    ])
+  it('discards sets it can no longer read, and keeps the exercises', async () => {
+    // Deliberately destructive, and therefore tested: the app has one user, who
+    // chose losing test data over carrying a migration nobody needs.
+    await seedVersion1(dbName)
 
     const { data } = await idb().load()
 
-    expect(data.sets).toHaveLength(3)
-    expect(data.blocks).toHaveLength(2)
-    expect(data.blocks.every((block) => block.closedAt !== null)).toBe(true)
-    expect(data.sets.every((entry) => entry.blockId.length > 0)).toBe(true)
-  })
-
-  it('is idempotent — reopening does not migrate twice', async () => {
-    await seedVersion1(dbName, [
-      legacySet('11111111-1111-4111-8111-111111111101', '2026-02-20', '2026-02-20T10:00:00.000Z'),
-    ])
-
-    await idb().load()
-    const { data } = await idb().load()
-
-    expect(data.blocks).toHaveLength(1)
-    expect(data.sets).toHaveLength(1)
+    expect(data.sets).toEqual([])
+    expect(data.exercises).toEqual([exercise])
   })
 })
 

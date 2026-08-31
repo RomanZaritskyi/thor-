@@ -137,11 +137,16 @@ invisibly and would be wrong exactly when it matters; and a workout-level object
 grouping exercises, which is a second thing to forget to close for no gain, since
 the premise is that today's session was never planned.
 
-The existing database is migrated, not discarded. `blocksFromLegacySets` reads
-pre-block data as what it actually was — one closed run per exercise per day —
-and is used both by the IndexedDB upgrade and by importing a version 1 export, so
-the rule that reinterprets somebody's training history exists once and is tested
-on its own.
+The pre-block database is **not** migrated. It was, briefly: a function
+reinterpreted old sets as one closed run per exercise per day, used by both the
+IndexedDB upgrade and a version 1 import path. That machinery was built for people
+who do not exist — the app has one user, testing it, whose stored sets were
+recorded to see whether the screen works. Constitution IX asks what the complexity
+beats, and the honest answer was "nothing".
+
+So the upgrade discards what it can no longer read and keeps the exercises, whose
+shape never changed. It is one line, it destroys data, and it is tested for
+exactly that reason.
 
 ## Complexity budget
 
@@ -174,11 +179,11 @@ on its own.
   after the fact, when `/analyze` found three of them already built and tested
   with no requirement behind them. They are the states nobody thinks to specify
   and everybody eventually sees; the next feature should list them up front.
-- **The migration touches real data.** The upgrade from version 1 rewrites every
-  stored set to carry a block. It runs once, inside the IndexedDB upgrade
-  transaction, and is covered by tests that seed a genuine version 1 database and
-  assert the log still reads cleanly afterwards — because the failure mode is not
-  a wrong number on screen, it is the app declaring a year of training unreadable.
+- **Discarding on upgrade only stays acceptable while there is one user.** The
+  version 1 upgrade drops sets rather than converting them. That was a decision
+  about test data on one phone, not a policy. The next schema change that meets
+  real history has to migrate it, and the deleted `blocksFromLegacySets` is in git
+  as the worked example of how.
 - **FR-012 is easy to regress.** Any future code path that writes without first
   checking the load result quietly reintroduces exactly the data loss the
   requirement forbids. The guard lives in the repository, and its test asserts the

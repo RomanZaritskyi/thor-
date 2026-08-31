@@ -1,9 +1,7 @@
 import { z } from 'zod'
 
 import {
-  blocksFromLegacySets,
   blockSchema,
-  legacySetEntrySchema,
   exerciseSchema,
   setEntrySchema,
   type Block,
@@ -12,21 +10,12 @@ import {
 } from './model'
 
 export const TRANSFER_VERSION = 2
-const LEGACY_VERSION = 1
 
 export interface WorkoutData {
   exercises: Exercise[]
   blocks: Block[]
   sets: SetEntry[]
 }
-
-/** Version 1 predates blocks; its sets are reinterpreted on the way in. */
-const legacyFileSchema = z.object({
-  version: z.literal(LEGACY_VERSION),
-  exportedAt: z.iso.datetime(),
-  exercises: z.array(exerciseSchema),
-  sets: z.array(legacySetEntrySchema),
-})
 
 const transferFileSchema = z.object({
   version: z.literal(TRANSFER_VERSION),
@@ -62,10 +51,7 @@ export function exportToJson(data: WorkoutData, exportedAt: Date): string {
  * this function accepts is one the app can fully restore; anything else is
  * refused with a reason rather than partially applied.
  */
-export function parseImport(
-  text: string,
-  createId: () => string = () => crypto.randomUUID(),
-): ImportResult {
+export function parseImport(text: string): ImportResult {
   let raw: unknown
 
   try {
@@ -76,36 +62,23 @@ export function parseImport(
 
   const version: unknown = (raw as { version?: unknown } | null)?.version
 
-  if (version !== TRANSFER_VERSION && version !== LEGACY_VERSION) {
+  if (version !== TRANSFER_VERSION) {
     return {
       ok: false,
-      reason:
-        `Непідтримувана версія файлу: ${String(version)}. ` +
-        `Ця версія читає ${String(LEGACY_VERSION)} і ${String(TRANSFER_VERSION)}`,
+      reason: `Непідтримувана версія файлу: ${String(version)}. Ця версія читає ${String(TRANSFER_VERSION)}`,
     }
   }
 
-  const malformed = {
-    ok: false,
-    reason: 'Записи у файлі не відповідають очікуваному формату',
-  } as const
-  let data: WorkoutData
+  const parsed = transferFileSchema.safeParse(raw)
 
-  if (version === LEGACY_VERSION) {
-    // Version 1 predates blocks. Its sets are reinterpreted as one closed block
-    // per exercise per day — the same rule the database upgrade applies.
-    const parsed = legacyFileSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, reason: 'Записи у файлі не відповідають очікуваному формату' }
+  }
 
-    if (!parsed.success) return malformed
-
-    const upgraded = blocksFromLegacySets(parsed.data.sets, createId)
-    data = { exercises: parsed.data.exercises, ...upgraded }
-  } else {
-    const parsed = transferFileSchema.safeParse(raw)
-
-    if (!parsed.success) return malformed
-
-    data = { exercises: parsed.data.exercises, blocks: parsed.data.blocks, sets: parsed.data.sets }
+  const data: WorkoutData = {
+    exercises: parsed.data.exercises,
+    blocks: parsed.data.blocks,
+    sets: parsed.data.sets,
   }
 
   // A set whose exercise is missing would restore as an entry nothing can show.
