@@ -111,7 +111,7 @@ the workout provider so `src/test/` stays feature-agnostic.
 | FR-017 | `transfer.ts::exportData`                                       | unit test on the serialised shape                                                                      |
 | FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`        | unit test: export, record more, import, only the exported data remains                                 |
 | FR-019 | `components/transfer-panel`                                     | component tests: the count is named; declining changes nothing                                         |
-| FR-020 | `model.ts::prefillFrom`                                         | unit tests; component test that the fields follow the block in progress                                |
+| FR-020 | `model.ts::nextSet` + `components/record-set-form` caption      | unit tests for the position hit, past the end of last time's block, and neither                        |
 | FR-021 | `components/exercise-picker` empty states                       | component test distinguishing both states                                                              |
 | FR-022 | `model.ts::exerciseNameSchema` + picker                         | unit test on the schema; component test that nothing is added                                          |
 | FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen`    | e2e on an unknown URL; component test on an unknown exercise                                           |
@@ -121,6 +121,7 @@ the workout provider so `src/test/` stays feature-agnostic.
 | FR-027 | `model.ts::stepValue` + `components/record-set-form`            | unit tests for clamping, empty fields and float dust; component and e2e tests recording without typing |
 | FR-028 | `model.ts::sortExercisesByRecency`                              | unit tests over recorded, older and never-recorded exercises; component test on render order           |
 | FR-029 | `model.ts::lastRecordedSet` + `daysBetween`                     | unit tests; component test that the label is present and absent in the right cases                     |
+| FR-030 | `model.ts::setRows` + `components/set-table`                    | unit tests over both blocks being longer; component and e2e tests reading the rows                     |
 
 ## Blocks (amendment)
 
@@ -178,6 +179,51 @@ are 44px now, applied as a `className` at the call sites rather than by editing
 `src/components/ui/button.tsx`, because that file is vendored and regenerated. And
 _Закінчити вправу_ moved above the set list, so reaching it no longer depends on
 how many sets are in it.
+
+## The Previous column (amendment)
+
+The screen stacked last time's sets, the form and today's sets, so the question it
+exists to answer — am I ahead of last time on this set? — was answered by looking
+up, holding two numbers, and looking back down. The numbers were both on screen
+and the comparison still happened in the user's head.
+
+They now share a row. One row per set position, last time's set beside today's
+(FR-030). Rows run to `max(today, last time)`, so a position last time reached and
+today has not still shows what was done there — how much is left to match is part
+of the decision, and counting it is the work being removed.
+
+`setRows` and `nextSet` take the `BlockWithSets | undefined` pair the screen has
+already computed with `currentBlock` and `previousBlock`, rather than querying the
+raw arrays again. That keeps the two selectors trivially testable — a pair of
+blocks in, rows out, no ids or dates to construct — and leaves one lookup on the
+screen instead of three.
+
+`nextSet` replaces `prefillFrom`, and the behaviour genuinely changes: the fields
+used to hold last time's **final** set and now hold the set at the same position
+(FR-020). For a ramp 20 → 40 → 60 → 80 that is the difference between twenty-four
+stepper taps and none; for straight sets the two agree, so the change is never a
+regression. Past the end of last time's block there is no corresponding set, and
+it falls back to the last one recorded today — the only thing left that is about
+today.
+
+Two consequences worth naming:
+
+- **Deleting from a block closed earlier today (FR-016).** Those sets are in the
+  Previous column, and a second delete button per row would be ambiguous about
+  which set it acts on and would not fit a phone row anyway. A row's button acts
+  on today's set; when the previous block is itself from today, a disclosure under
+  the table expands it as the existing `set-list`, with its deletes. One control,
+  one meaning.
+- **_Закінчити вправу_ moved below the form.** The thumb-first pass put it above
+  the set list so its position would not follow the list's length; the table is
+  bounded by the previous block, so that reasoning is spent. Closing a run is
+  better off needing a deliberate reach than sitting under the thumb that taps
+  _Записати підхід_.
+
+The screenshots that prompted this also showed rest timers, a workout-level
+Finish/Cancel across several exercises, and _Add Exercises_. All three are already
+refused in **Out of scope**, and the premise that today's session was never
+planned is why. Only the column was taken.
 
 ## Complexity budget
 

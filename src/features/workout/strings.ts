@@ -23,7 +23,6 @@ export const ui = {
     lastTime: 'Минулого разу',
     noHistory: 'Цю вправу ще не робили. Це буде перший запис.',
     today: 'Цей раз',
-    noSetsToday: 'Ще жодного підходу — запишіть перший.',
     rename: 'Перейменувати',
     renameLabel: 'Нова назва вправи',
     renameSave: 'Зберегти',
@@ -34,6 +33,8 @@ export const ui = {
     finishing: 'Закриваю…',
     finishHint:
       'Закриє цей підхід до вправи. Якщо повернетесь до неї сьогодні — ці підходи стануть «минулого разу».',
+    fixPrevious: 'Виправити минулий підхід',
+    hidePrevious: 'Згорнути',
     atTime: (time: string) => `сьогодні, ${time}`,
     notFound: 'Такої вправи немає.',
     daysAgo: (days: number) =>
@@ -48,9 +49,25 @@ export const ui = {
     weightDown: 'Менше на 2.5 кг',
     repsUp: 'На один повтор більше',
     repsDown: 'На один повтор менше',
+    /** FR-020 — which set this is, and what it has to beat. */
+    forPosition: (position: number, previous: string | undefined) =>
+      `Підхід ${String(position)} · ${
+        previous === undefined ? 'минулого разу не було' : `минулого разу ${previous}`
+      }`,
     noteLabel: 'Примітка (тренажер, отвір, відчуття)',
     submit: 'Записати підхід',
     submitting: 'Записую…',
+  },
+
+  sets: {
+    tableLabel: 'Підходи',
+    position: '№',
+    previousColumn: 'Минулого',
+    todayColumn: 'Цей раз',
+    actions: 'Дії',
+    /** A position last time reached and today has not. */
+    none: '—',
+    next: 'наступний',
   },
 
   set: {

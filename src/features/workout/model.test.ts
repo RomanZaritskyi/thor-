@@ -9,14 +9,15 @@ import {
   exerciseNameSchema,
   isBlockOpen,
   normalizeExerciseName,
-  prefillFrom,
+  nextSet,
   previousBlock,
   searchExercises,
   setDraftSchema,
+  setRows,
   setsInBlock,
   todayKey,
 } from './model'
-import type { Block, Exercise, SetEntry } from './model'
+import type { Block, BlockWithSets, Exercise, SetEntry } from './model'
 
 function exercise(name: string, id = name): Exercise {
   return {
@@ -325,33 +326,102 @@ describe('previousBlock and currentBlock (FR-003, FR-024)', () => {
   })
 })
 
-describe('prefillFrom (FR-020)', () => {
-  const closed = block({ id: 'first', closedAt: '2026-03-01T09:30:00.000Z' })
-  const open = block({ id: 'second', startedAt: '2026-03-01T18:00:00.000Z' })
+/** A run, in the shape the screen already holds it. Only the sets matter here. */
+function run(sets: SetEntry[], id = 'b'): BlockWithSets {
+  return { block: block({ id }), sets }
+}
 
-  it('follows the last set of the block in progress', () => {
-    const sets = [
-      set({ id: 'a', blockId: 'first', weightKg: 50, reps: 8 }),
-      set({ id: 'b', blockId: 'second', weightKg: 65, reps: 12 }),
-    ]
+/** A ramp: the shape that motivated prefilling by position. */
+const RAMP = [
+  set({ id: 'p1', weightKg: 20, reps: 20 }),
+  set({ id: 'p2', weightKg: 40, reps: 10 }),
+  set({ id: 'p3', weightKg: 60, reps: 8 }),
+  set({ id: 'p4', weightKg: 80, reps: 5 }),
+]
 
-    expect(prefillFrom([closed, open], sets, EXERCISE, TODAY)).toEqual({ weightKg: 65, reps: 12 })
+describe('setRows (FR-030)', () => {
+  it('pairs each position with what was done at it last time', () => {
+    const today = [set({ id: 't1', weightKg: 22.5 }), set({ id: 't2', weightKg: 42.5 })]
+    const rows = setRows(run(today, 'today'), run(RAMP.slice(0, 2), 'last'))
+
+    expect(rows.map((row) => row.position)).toEqual([1, 2])
+    expect(rows.map((row) => row.today?.id)).toEqual(['t1', 't2'])
+    expect(rows.map((row) => row.previous?.id)).toEqual(['p1', 'p2'])
   })
 
-  it('falls back to the previous block when starting a fresh one', () => {
-    const sets = [set({ blockId: 'first', weightKg: 50, reps: 8 })]
+  it('runs to the end of last time when today has fewer sets', () => {
+    // How much is left to match is part of the decision, so it must be visible.
+    const rows = setRows(run([set({ id: 't1' })], 'today'), run(RAMP, 'last'))
 
-    expect(prefillFrom([closed], sets, EXERCISE, TODAY)).toEqual({ weightKg: 50, reps: 8 })
+    expect(rows).toHaveLength(4)
+    expect(rows.slice(1).every((row) => row.today === undefined)).toBe(true)
+    expect(rows.map((row) => row.previous?.weightKg)).toEqual([20, 40, 60, 80])
   })
 
-  it('returns undefined for an exercise with no history', () => {
-    expect(prefillFrom([], [], EXERCISE, TODAY)).toBeUndefined()
+  it('runs to the end of today when today has more sets', () => {
+    const today = [set({ id: 't1' }), set({ id: 't2' }), set({ id: 't3' })]
+    const rows = setRows(run(today, 'today'), run(RAMP.slice(0, 2), 'last'))
+
+    expect(rows).toHaveLength(3)
+    expect(rows[2]?.previous).toBeUndefined()
+    expect(rows[2]?.today?.id).toBe('t3')
+  })
+
+  it('works with only one side, and with neither', () => {
+    expect(setRows(run([set()], 'today'), undefined).map((row) => row.previous)).toEqual([
+      undefined,
+    ])
+    expect(setRows(undefined, run([set()], 'last')).map((row) => row.today)).toEqual([undefined])
+    expect(setRows(undefined, undefined)).toEqual([])
+  })
+})
+
+describe('nextSet (FR-020)', () => {
+  it('starts a fresh block from the first set of the last one, not its last', () => {
+    // The ramp is the point: 20 → 40 → 60 → 80 repeats from 20, and the old
+    // behaviour of offering 80 cost twenty-four stepper taps to undo.
+    const next = nextSet(undefined, run(RAMP, 'last'))
+
+    expect(next.position).toBe(1)
+    expect(next.prefill).toEqual({ weightKg: 20, reps: 20 })
+    expect(next.previous?.id).toBe('p1')
+  })
+
+  it('follows the position, not the last set recorded', () => {
+    const today = [set({ id: 't1', weightKg: 20 }), set({ id: 't2', weightKg: 40 })]
+    const next = nextSet(run(today, 'today'), run(RAMP, 'last'))
+
+    expect(next.position).toBe(3)
+    expect(next.prefill).toEqual({ weightKg: 60, reps: 8 })
+  })
+
+  it('falls back to the set just recorded past the end of last time', () => {
+    const today = [set({ id: 't1' }), set({ id: 't2', weightKg: 47.5, reps: 6 })]
+    const next = nextSet(run(today, 'today'), run(RAMP.slice(0, 2), 'last'))
+
+    expect(next.position).toBe(3)
+    expect(next.previous).toBeUndefined()
+    expect(next.prefill).toEqual({ weightKg: 47.5, reps: 6 })
+  })
+
+  it('falls back to the set just recorded when there is no history at all', () => {
+    const next = nextSet(run([set({ weightKg: 35, reps: 9 })], 'today'), undefined)
+
+    expect(next.prefill).toEqual({ weightKg: 35, reps: 9 })
+  })
+
+  it('leaves the fields empty for an exercise never recorded', () => {
+    expect(nextSet(undefined, undefined)).toEqual({
+      position: 1,
+      previous: undefined,
+      prefill: undefined,
+    })
   })
 
   it('carries no note across — a note describes one set, not the next', () => {
-    const sets = [set({ blockId: 'first', note: 'Hammer, 3rd hole' })]
+    const next = nextSet(undefined, run([set({ note: 'Hammer, 3rd hole' })], 'last'))
 
-    expect(prefillFrom([closed], sets, EXERCISE, TODAY)).not.toHaveProperty('note')
+    expect(next.prefill).not.toHaveProperty('note')
   })
 })
 

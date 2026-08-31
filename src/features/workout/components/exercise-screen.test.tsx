@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { normalizeExerciseName, type Block, type Exercise, type SetEntry } from '../model'
@@ -41,6 +41,11 @@ function set(overrides: Partial<SetEntry> = {}): SetEntry {
   }
 }
 
+/** A ramp recorded a week and a half ago — the shape the Previous column is for. */
+function ramp(...loads: [number, number][]): SetEntry[] {
+  return loads.map(([weightKg, reps]) => set({ weightKg, reps }))
+}
+
 function render(seed: Partial<Omit<WorkoutData, 'exercises'>> = {}) {
   const repository = createTestRepository({
     exercises: [legPress],
@@ -56,12 +61,39 @@ function summaries() {
   return screen.getAllByTestId('set-summary').map((node) => node.textContent)
 }
 
+/** Last time's column, in DOM order. */
+function previously() {
+  return screen.getAllByTestId('set-previous').map((node) => node.textContent)
+}
+
+/** Every body row as `[position, last time, this time]` — the pairing itself. */
+function rows() {
+  return screen
+    .getAllByRole('row')
+    .slice(1)
+    .map((row) => {
+      const cells = within(row).getAllByRole('cell')
+
+      return [
+        within(row).getByRole('rowheader').textContent,
+        cells[0]?.textContent,
+        cells[1]?.textContent,
+      ]
+    })
+}
+
 async function recordSet(user: ReturnType<typeof render>['user'], weight: string, reps: string) {
   await user.clear(await screen.findByLabelText('Вага, кг'))
   await user.type(screen.getByLabelText('Вага, кг'), weight)
   await user.clear(screen.getByLabelText('Повтори'))
   await user.type(screen.getByLabelText('Повтори'), reps)
   await user.click(screen.getByRole('button', { name: 'Записати підхід' }))
+
+  // Wait for it to land in today's column. Waiting on the text alone is
+  // ambiguous the moment a set repeats what was done at the same position.
+  await vi.waitFor(() => {
+    expect(summaries()).toContain(`${weight} × ${reps}`)
+  })
 }
 
 describe('<ExerciseScreen />', () => {
@@ -75,18 +107,22 @@ describe('<ExerciseScreen />', () => {
     render()
 
     expect(await screen.findByText(/ще не робили/i)).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
   it('shows the previous block with every set (FR-003)', async () => {
-    render({
-      blocks: [block()],
-      sets: [set({ weightKg: 55, reps: 12 }), set({ weightKg: 60, reps: 10 })],
-    })
+    render({ blocks: [block()], sets: ramp([55, 12], [60, 10]) })
 
-    const lastTime = await screen.findByRole('region', { name: 'Минулого разу' })
+    await screen.findByRole('table', { name: 'Підходи' })
 
-    expect(lastTime).toHaveTextContent('55 × 12')
-    expect(lastTime).toHaveTextContent('60 × 10')
+    expect(previously()).toEqual(['55 × 12', '60 × 10'])
+  })
+
+  it('shows when the previous block happened (FR-003)', async () => {
+    render({ blocks: [block()], sets: ramp([55, 12]) })
+
+    // 2026-02-20 against a clock pinned to 2026-03-01.
+    expect(await screen.findByText(/20 лютого · 9 дн\. тому/)).toBeInTheDocument()
   })
 
   it('shows the previous block, not an older one (FR-003)', async () => {
@@ -106,24 +142,81 @@ describe('<ExerciseScreen />', () => {
       ],
     })
 
-    const lastTime = await screen.findByRole('region', { name: 'Минулого разу' })
+    await screen.findByRole('table', { name: 'Підходи' })
 
-    expect(lastTime).toHaveTextContent('60 × 10')
-    expect(lastTime).not.toHaveTextContent('40 × 5')
+    expect(previously()).toEqual(['60 × 10'])
+  })
+})
+
+describe('<ExerciseScreen /> — the Previous column (FR-030)', () => {
+  it('puts each set beside the one done at the same position last time', async () => {
+    const { user } = render({ blocks: [block()], sets: ramp([20, 20], [40, 10], [60, 8]) })
+
+    await recordSet(user, '22.5', '20')
+    await recordSet(user, '42.5', '10')
+
+    expect(rows()).toEqual([
+      ['1', '20 × 20', '22.5 × 20'],
+      ['2', '40 × 10', '42.5 × 10'],
+      // Not reached yet, so what is left to match is still on screen.
+      ['3', '60 × 8', 'наступний'],
+    ])
   })
 
-  it('shows a note beside the set it belongs to (FR-014)', async () => {
-    render({ blocks: [block()], sets: [set({ note: 'Hammer, 3-й отвір' })] })
+  it('marks the position about to be recorded', async () => {
+    render({ blocks: [block()], sets: ramp([20, 20], [40, 10]) })
+
+    await screen.findByRole('table', { name: 'Підходи' })
+    const [first, second] = screen.getAllByRole('row').slice(1)
+
+    expect(first).toHaveAttribute('aria-current', 'step')
+    expect(second).not.toHaveAttribute('aria-current')
+  })
+
+  it('shows a dash where last time has nothing to compare against', async () => {
+    const { user } = render()
+
+    await recordSet(user, '38', '4')
+
+    expect(rows()).toEqual([['1', '—', '38 × 4']])
+  })
+
+  it('goes past the end of last time rather than stopping there', async () => {
+    const { user } = render({ blocks: [block()], sets: ramp([20, 20]) })
+
+    await recordSet(user, '20', '20')
+    await recordSet(user, '40', '10')
+
+    expect(rows()).toEqual([
+      ['1', '20 × 20', '20 × 20'],
+      ['2', '—', '40 × 10'],
+    ])
+  })
+
+  it('shows a note on either side of the row (FR-014)', async () => {
+    const { user } = render({ blocks: [block()], sets: [set({ note: 'Hammer, 3-й отвір' })] })
 
     expect(await screen.findByText('Hammer, 3-й отвір')).toBeInTheDocument()
-  })
 
+    await user.type(await screen.findByLabelText(/Примітка/), 'важко')
+    await user.click(screen.getByRole('button', { name: 'Записати підхід' }))
+    await vi.waitFor(() => {
+      expect(summaries()).toHaveLength(1)
+    })
+
+    expect(rows()[0]?.[1]).toContain('Hammer, 3-й отвір')
+    expect(rows()[0]?.[2]).toContain('важко')
+  })
+})
+
+describe('<ExerciseScreen /> — recording', () => {
   it('records a set into the block in progress (FR-005)', async () => {
     const { user } = render()
 
     await recordSet(user, '80', '6')
 
-    expect(await screen.findByRole('region', { name: 'Цей раз' })).toHaveTextContent('80 × 6')
+    expect(await screen.findByText('80 × 6')).toBeInTheDocument()
+    expect(summaries()).toEqual(['80 × 6'])
   })
 
   it('keeps several sets in the order recorded (FR-006)', async () => {
@@ -131,7 +224,6 @@ describe('<ExerciseScreen />', () => {
 
     for (let i = 0; i < 3; i += 1) {
       await recordSet(user, String(50 + i), '10')
-      await screen.findByText(`${String(50 + i)} × 10`)
     }
 
     expect(summaries()).toEqual(['50 × 10', '51 × 10', '52 × 10'])
@@ -147,55 +239,78 @@ describe('<ExerciseScreen />', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect((await repository.load()).data.sets).toEqual([])
   })
+})
 
-  it('prefills from the previous block (FR-020)', async () => {
-    render({ blocks: [block()], sets: [set({ weightKg: 62.5, reps: 9 })] })
+describe('<ExerciseScreen /> — prefill by position (FR-020)', () => {
+  it('starts a fresh block from the first set of the last one, not its heaviest', async () => {
+    render({ blocks: [block()], sets: ramp([20, 20], [40, 10], [60, 8], [80, 5]) })
 
-    expect(await screen.findByLabelText('Вага, кг')).toHaveValue(62.5)
-    expect(screen.getByLabelText('Повтори')).toHaveValue(9)
+    expect(await screen.findByLabelText('Вага, кг')).toHaveValue(20)
+    expect(screen.getByLabelText('Повтори')).toHaveValue(20)
   })
 
-  it('follows the last set of the block in progress (FR-020)', async () => {
-    const { user } = render({ blocks: [block()], sets: [set({ weightKg: 40, reps: 5 })] })
+  it('moves to the next position as sets are recorded', async () => {
+    const { user } = render({ blocks: [block()], sets: ramp([20, 20], [40, 10], [60, 8]) })
+
+    await recordSet(user, '20', '20')
+
+    expect(screen.getByLabelText('Вага, кг')).toHaveValue(40)
+    expect(screen.getByLabelText('Повтори')).toHaveValue(10)
+  })
+
+  it('names the position and what it has to beat', async () => {
+    const { user } = render({ blocks: [block()], sets: ramp([20, 20], [40, 10]) })
+
+    expect(await screen.findByText('Підхід 1 · минулого разу 20 × 20')).toBeInTheDocument()
+
+    await recordSet(user, '20', '20')
+
+    expect(await screen.findByText('Підхід 2 · минулого разу 40 × 10')).toBeInTheDocument()
+  })
+
+  it('says so where last time has no counterpart', async () => {
+    render()
+
+    expect(await screen.findByText('Підхід 1 · минулого разу не було')).toBeInTheDocument()
+    expect(screen.getByLabelText('Вага, кг')).toHaveValue(null)
+  })
+
+  it('falls back to the set just recorded past the end of last time', async () => {
+    const { user } = render({ blocks: [block()], sets: ramp([40, 5]) })
 
     await recordSet(user, '70', '5')
-    await screen.findByText('70 × 5')
 
     expect(screen.getByLabelText('Вага, кг')).toHaveValue(70)
   })
+})
 
-  it('starts empty for an exercise with no history (FR-020)', async () => {
-    render()
-
-    expect(await screen.findByLabelText('Вага, кг')).toHaveValue(null)
-  })
-
+describe('<ExerciseScreen /> — finishing and deleting', () => {
   it('finishing makes this run the one to build on next time (FR-024)', async () => {
     const { user } = render()
 
     await recordSet(user, '100', '5')
-    await screen.findByText('100 × 5')
 
     await user.click(screen.getByRole('button', { name: 'Закінчити вправу' }))
 
     // The run just finished is now "last time", and nothing is in progress.
-    expect(await screen.findByRole('region', { name: 'Минулого разу' })).toHaveTextContent(
-      '100 × 5',
-    )
-    expect(screen.getByRole('region', { name: 'Цей раз' })).toHaveTextContent(/жодного підходу/i)
+    await vi.waitFor(() => {
+      expect(previously()).toEqual(['100 × 5'])
+    })
+    expect(screen.queryByTestId('set-summary')).not.toBeInTheDocument()
 
     // Starting again opens a fresh run, prefilled from the finished one.
     expect(screen.getByLabelText('Вага, кг')).toHaveValue(100)
     await recordSet(user, '105', '5')
 
-    expect(await screen.findByRole('region', { name: 'Цей раз' })).toHaveTextContent('105 × 5')
-    expect(screen.getByRole('region', { name: 'Минулого разу' })).toHaveTextContent('100 × 5')
+    await vi.waitFor(() => {
+      expect(rows()).toEqual([['1', '100 × 5', '105 × 5']])
+    })
   })
 
   it('offers no finish when nothing is in progress (FR-024)', async () => {
     render({ blocks: [block()], sets: [set()] })
 
-    await screen.findByRole('region', { name: 'Минулого разу' })
+    await screen.findByRole('table', { name: 'Підходи' })
 
     expect(screen.queryByRole('button', { name: 'Закінчити вправу' })).not.toBeInTheDocument()
   })
@@ -204,36 +319,46 @@ describe('<ExerciseScreen />', () => {
     const { user } = render()
 
     await recordSet(user, '100', '5')
-    await screen.findByText('100 × 5')
 
     await user.click(screen.getByRole('button', { name: 'Видалити підхід 100 × 5' }))
 
-    expect(await screen.findByText(/жодного підходу/i)).toBeInTheDocument()
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    })
   })
 
   it('still allows deleting from a block already finished today (FR-016)', async () => {
     const { user } = render()
 
     await recordSet(user, '100', '5')
-    await screen.findByText('100 × 5')
     await user.click(screen.getByRole('button', { name: 'Закінчити вправу' }))
-    await screen.findByRole('region', { name: 'Минулого разу' })
+    await vi.waitFor(() => {
+      expect(previously()).toEqual(['100 × 5'])
+    })
 
-    await user.click(screen.getByRole('button', { name: 'Видалити підхід 100 × 5' }))
+    // Not in the row — the Previous column is read-only, so the fix has its own place.
+    expect(screen.queryByRole('button', { name: /Видалити підхід/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Виправити минулий підхід' }))
+    await user.click(await screen.findByRole('button', { name: 'Видалити підхід 100 × 5' }))
 
     expect(await screen.findByText(/ще не робили/i)).toBeInTheDocument()
   })
 
-  it('offers no delete on a set from an earlier day (FR-016)', async () => {
+  it('offers no way to change a block from an earlier day (FR-016)', async () => {
     render({ blocks: [block()], sets: [set()] })
 
-    await screen.findByRole('region', { name: 'Минулого разу' })
+    await screen.findByRole('table', { name: 'Підходи' })
 
     expect(screen.queryByRole('button', { name: /Видалити підхід/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Виправити минулий підхід' }),
+    ).not.toBeInTheDocument()
   })
+})
 
+describe('<ExerciseScreen /> — the exercise itself', () => {
   it('renames the exercise, and the history stays with it (FR-025)', async () => {
-    const { user } = render({ blocks: [block()], sets: [set({ weightKg: 55, reps: 12 })] })
+    const { user } = render({ blocks: [block()], sets: ramp([55, 12]) })
 
     await user.click(await screen.findByRole('button', { name: 'Перейменувати' }))
     const field = screen.getByLabelText('Нова назва вправи')
@@ -242,7 +367,7 @@ describe('<ExerciseScreen />', () => {
     await user.click(screen.getByRole('button', { name: 'Зберегти' }))
 
     expect(await screen.findByRole('heading', { name: 'Жим ногами вузько' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Минулого разу' })).toHaveTextContent('55 × 12')
+    expect(previously()).toEqual(['55 × 12'])
   })
 
   it('reports a name another exercise holds, and keeps the old one (FR-025)', async () => {
@@ -281,7 +406,6 @@ describe('<ExerciseScreen />', () => {
     expect(await screen.findByRole('button', { name: 'Видалити вправу' })).toBeInTheDocument()
 
     await recordSet(user, '60', '10')
-    await screen.findByText('60 × 10')
 
     expect(screen.queryByRole('button', { name: 'Видалити вправу' })).not.toBeInTheDocument()
   })
@@ -296,8 +420,18 @@ describe('<ExerciseScreen />', () => {
     })
   })
 
-  it('adjusts weight and reps in steps, without typing (FR-027)', async () => {
-    const { user } = render({ blocks: [block()], sets: [set({ weightKg: 80, reps: 10 })] })
+  it('explains an exercise that does not exist, and offers the way back (FR-023)', async () => {
+    const repository = createTestRepository({ exercises: [], blocks: [], sets: [] })
+    renderWorkout(<ExerciseScreen exerciseId={uuid('zz')} />, { repository })
+
+    expect(await screen.findByText(/Такої вправи немає/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'До списку вправ' })).toBeInTheDocument()
+  })
+})
+
+describe('<ExerciseScreen /> — stepping (FR-027)', () => {
+  it('adjusts weight and reps in steps, without typing', async () => {
+    const { user } = render({ blocks: [block()], sets: ramp([80, 10]) })
 
     await user.click(await screen.findByRole('button', { name: 'Більше на 2.5 кг' }))
     expect(screen.getByLabelText('Вага, кг')).toHaveValue(82.5)
@@ -309,28 +443,20 @@ describe('<ExerciseScreen />', () => {
     expect(screen.getByLabelText('Повтори')).toHaveValue(11)
   })
 
-  it('records the stepped value (FR-027)', async () => {
-    const { user } = render({ blocks: [block()], sets: [set({ weightKg: 80, reps: 10 })] })
+  it('records the stepped value', async () => {
+    const { user } = render({ blocks: [block()], sets: ramp([80, 10]) })
 
     await user.click(await screen.findByRole('button', { name: 'Більше на 2.5 кг' }))
     await user.click(screen.getByRole('button', { name: 'Записати підхід' }))
 
-    expect(await screen.findByRole('region', { name: 'Цей раз' })).toHaveTextContent('82.5 × 10')
+    expect(await screen.findByText('82.5 × 10')).toBeInTheDocument()
   })
 
-  it('offers no downward step at the minimum (FR-027)', async () => {
+  it('offers no downward step at the minimum', async () => {
     render()
 
     // Empty fields read as the minimum, so there is nothing to step down to.
     expect(await screen.findByRole('button', { name: 'Менше на 2.5 кг' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'На один повтор менше' })).toBeDisabled()
-  })
-
-  it('explains an exercise that does not exist, and offers the way back (FR-023)', async () => {
-    const repository = createTestRepository({ exercises: [], blocks: [], sets: [] })
-    renderWorkout(<ExerciseScreen exerciseId={uuid('zz')} />, { repository })
-
-    expect(await screen.findByText(/Такої вправи немає/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'До списку вправ' })).toBeInTheDocument()
   })
 })

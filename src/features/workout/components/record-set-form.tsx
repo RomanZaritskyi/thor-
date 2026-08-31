@@ -49,10 +49,13 @@ function Stepper({
 
 export function RecordSetForm({
   prefill,
+  caption,
   isSubmitting = false,
   onSubmit,
 }: {
   prefill: Prefill | undefined
+  /** Which set this is and what it has to beat (FR-020). */
+  caption: string
   isSubmitting?: boolean
   onSubmit: (draft: SetDraft) => void
 }) {
@@ -95,6 +98,8 @@ export function RecordSetForm({
         submit()
       }}
     >
+      <p className="text-sm font-medium text-muted-foreground">{caption}</p>
+
       <div className="space-y-3">
         <div className="space-y-2">
           <Label htmlFor="set-weight">{ui.record.weightLabel}</Label>

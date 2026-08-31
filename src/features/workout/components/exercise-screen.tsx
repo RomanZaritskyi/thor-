@@ -1,15 +1,17 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 
-import { currentBlock, prefillFrom, previousBlock } from '../model'
+import { currentBlock, nextSet, previousBlock, setRows } from '../model'
 import { useDeleteSet, useFinishExercise, useRecordSet, useWorkoutData } from '../queries'
 import { useWorkoutRepository } from '../repository-context'
 import { ui } from '../strings'
 import { ExerciseHeading } from './exercise-heading'
 import { RecordSetForm } from './record-set-form'
 import { SetList } from './set-list'
+import { SetTable } from './set-table'
 
 /**
  * When a block happened, in the terms the decision needs: a run finished an hour
@@ -40,6 +42,7 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
   const finishExercise = useFinishExercise()
   const today = useWorkoutRepository().today()
   const navigate = useNavigate()
+  const [fixingPrevious, setFixingPrevious] = useState(false)
 
   const data = workout.data?.data
   const exercise = data?.exercises.find((candidate) => candidate.id === exerciseId)
@@ -61,9 +64,10 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
 
   const previous = previousBlock(data.blocks, data.sets, exerciseId, today)
   const current = currentBlock(data.blocks, data.sets, exerciseId, today)
-  const prefill = prefillFrom(data.blocks, data.sets, exerciseId, today)
+  const rows = setRows(current, previous)
+  const next = nextSet(current, previous)
   // Remount the form when the numbers it should start from change (FR-020).
-  const prefillKey = `${String(prefill?.weightKg ?? '')}x${String(prefill?.reps ?? '')}`
+  const prefillKey = `${String(next.prefill?.weightKg ?? '')}x${String(next.prefill?.reps ?? '')}`
 
   return (
     <div className="space-y-6">
@@ -93,62 +97,83 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
             </span>
           )}
         </h2>
+
         {previous === undefined ? (
           <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
             {ui.exercise.noHistory}
           </p>
-        ) : (
-          <SetList
-            sets={previous.sets}
-            onDelete={
-              previous.block.date === today
-                ? (entry) => {
-                    deleteSet.mutate(entry.id)
-                  }
-                : undefined
-            }
+        ) : null}
+
+        {rows.length === 0 ? null : (
+          <SetTable
+            rows={rows}
+            nextPosition={next.position}
+            onDelete={(entry) => {
+              deleteSet.mutate(entry.id)
+            }}
           />
         )}
+
+        {/* FR-016 — a block closed earlier today is still fixable. Its sets live
+            in the Previous column, where a second delete per row would be
+            ambiguous, so they get their own place instead. */}
+        {previous?.block.date === today ? (
+          <div className="space-y-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-11"
+              aria-expanded={fixingPrevious}
+              onClick={() => {
+                setFixingPrevious(!fixingPrevious)
+              }}
+            >
+              {fixingPrevious ? ui.exercise.hidePrevious : ui.exercise.fixPrevious}
+            </Button>
+            {fixingPrevious ? (
+              <SetList
+                sets={previous.sets}
+                onDelete={(entry) => {
+                  deleteSet.mutate(entry.id)
+                }}
+              />
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       <RecordSetForm
         key={prefillKey}
-        prefill={prefill}
+        prefill={next.prefill}
+        caption={ui.record.forPosition(
+          next.position,
+          next.previous === undefined
+            ? undefined
+            : ui.set.summary(next.previous.weightKg, next.previous.reps),
+        )}
         isSubmitting={recordSet.isPending}
         onSubmit={(draft) => {
           recordSet.mutate({ exerciseId, draft })
         }}
       />
 
-      <section aria-label={ui.exercise.today} className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">{ui.exercise.today}</h2>
-        {current === undefined || current.sets.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{ui.exercise.noSetsToday}</p>
-        ) : (
-          <>
-            {/* FR-024. Above the list, so its position does not depend on how
-                many sets are in it. */}
-            <Button
-              variant="secondary"
-              className="h-11 w-full"
-              disabled={finishExercise.isPending}
-              onClick={() => {
-                finishExercise.mutate(exerciseId)
-              }}
-            >
-              {finishExercise.isPending ? ui.exercise.finishing : ui.exercise.finish}
-            </Button>
-            <p className="text-xs text-muted-foreground">{ui.exercise.finishHint}</p>
-
-            <SetList
-              sets={current.sets}
-              onDelete={(entry) => {
-                deleteSet.mutate(entry.id)
-              }}
-            />
-          </>
-        )}
-      </section>
+      {/* FR-024. Below the form: closing a run should take a deliberate reach,
+          not sit under the thumb that taps «Записати підхід». */}
+      {current === undefined || current.sets.length === 0 ? null : (
+        <div className="space-y-2">
+          <Button
+            variant="secondary"
+            className="h-11 w-full"
+            disabled={finishExercise.isPending}
+            onClick={() => {
+              finishExercise.mutate(exerciseId)
+            }}
+          >
+            {finishExercise.isPending ? ui.exercise.finishing : ui.exercise.finish}
+          </Button>
+          <p className="text-xs text-muted-foreground">{ui.exercise.finishHint}</p>
+        </div>
+      )}
     </div>
   )
 }

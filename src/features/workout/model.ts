@@ -227,19 +227,59 @@ export function previousBlock(
 }
 
 /**
- * FR-020 — what the weight and reps fields start with: the last set of the block
- * in progress, or of the previous one when starting fresh. The note is not
- * carried across; it describes the set that happened, not the next one.
+ * FR-030 — one row per set position, today's set beside the one done at the same
+ * position last time. Rows run to whichever block is longer: a position last time
+ * reached and today has not still shows what was done there, because how much is
+ * left to match is part of the decision.
  */
-export function prefillFrom(
-  blocks: readonly Block[],
-  sets: readonly SetEntry[],
-  exerciseId: string,
-  today: string,
-): { weightKg: number; reps: number } | undefined {
-  const source =
-    currentBlock(blocks, sets, exerciseId, today) ?? previousBlock(blocks, sets, exerciseId, today)
-  const latest = source?.sets.at(-1)
+export interface SetRow {
+  /** 1-based, as it reads on screen. */
+  position: number
+  today: SetEntry | undefined
+  previous: SetEntry | undefined
+}
 
-  return latest === undefined ? undefined : { weightKg: latest.weightKg, reps: latest.reps }
+export function setRows(
+  current: BlockWithSets | undefined,
+  previous: BlockWithSets | undefined,
+): SetRow[] {
+  const today = current?.sets ?? []
+  const before = previous?.sets ?? []
+
+  return Array.from({ length: Math.max(today.length, before.length) }, (_unused, index) => ({
+    position: index + 1,
+    today: today[index],
+    previous: before[index],
+  }))
+}
+
+export interface NextSet {
+  position: number
+  /** What was done at this position last time, for the caption above the fields. */
+  previous: SetEntry | undefined
+  prefill: { weightKg: number; reps: number } | undefined
+}
+
+/**
+ * FR-020 — the set about to be recorded. The fields start from the set at the
+ * same position last time, so repeating a ramp needs no typing; past the end of
+ * that block there is no counterpart, and the set just recorded is the only thing
+ * left that is about today.
+ *
+ * The note is not carried across: it describes the set that happened, not the
+ * next one.
+ */
+export function nextSet(
+  current: BlockWithSets | undefined,
+  previous: BlockWithSets | undefined,
+): NextSet {
+  const position = (current?.sets.length ?? 0) + 1
+  const counterpart = previous?.sets[position - 1]
+  const source = counterpart ?? current?.sets.at(-1)
+
+  return {
+    position,
+    previous: counterpart,
+    prefill: source === undefined ? undefined : { weightKg: source.weightKg, reps: source.reps },
+  }
 }

@@ -123,6 +123,15 @@ requirement and no code behind it.
 - [x] T144 — 44px icon buttons at the call sites; _Закінчити вправу_ above the set list · FR: —
 - [x] T145 — Playwright: record a set using only the steppers; the list ordered by recency · FR: FR-027, FR-028, FR-029
 
+## The Previous column
+
+- [x] T150 — Failing unit tests for `setRows`: both blocks the same length, last time longer, today longer, one side absent, neither · FR: FR-030
+- [x] T151 [P] — Failing unit tests for `nextSet`: the position hit, past the end of last time's block, no previous block, and a fresh block against a ramp · FR: FR-020
+- [x] T152 [P] — Failing component tests: a row per position with both columns, an unreached position showing only last time, the next position marked, the form caption naming position and previous set, a note on either side, delete from a today row, and the disclosure present only when the previous block is today's · FR: FR-014, FR-016, FR-020, FR-030
+- [x] T153 — `model.ts`: `setRows` and `nextSet`; `prefillFrom` removed · FR: FR-020, FR-030
+- [x] T154 — `components/set-table.tsx`, the caption in `components/record-set-form.tsx`, `components/exercise-screen.tsx` recomposed · FR: FR-003, FR-014, FR-016, FR-020, FR-030
+- [x] T155 — Playwright: ramp 20 → 40 → 60, finish, start again and read the Previous column row by row · FR: FR-020, FR-024, FR-030
+
 ## Verification
 
 - [x] T080 — `pnpm verify` green · FR: —
@@ -131,6 +140,13 @@ requirement and no code behind it.
 - [x] T083 — Spec status set to `shipped`; `pnpm spec:check` clean · FR: —
 
 ## Notes from implementation
+
+- Keying the record form on the prefill remounts it whenever those numbers change,
+  which is now after most sets rather than a few. A Playwright helper that filled
+  the next set immediately after submitting raced that remount and silently lost
+  the weight — the set recorded was the prefill, not what the test typed. The
+  helper waits for the set to land first, and the position was taken back out of
+  the key so the form remounts only when its numbers actually change.
 
 - The screen computed "today" from its own clock while the repository used the
   injected one. They agreed in production except for one second either side of

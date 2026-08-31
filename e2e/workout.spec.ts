@@ -34,6 +34,11 @@ async function recordSet(page: Page, weight: string, reps: string) {
   await page.getByLabel('Вага, кг').fill(weight)
   await page.getByLabel('Повтори').fill(reps)
   await page.getByRole('button', { name: 'Записати підхід' }).click()
+
+  // The form is remounted when the numbers it starts from change, so filling the
+  // next set straight away races that remount and loses the value. Wait for the
+  // set to land first — by then the new fields are the ones on screen.
+  await expect(page.getByTestId('set-summary').last()).toHaveText(`${weight} × ${reps}`)
 }
 
 test('opens straight onto exercise selection (FR-001)', async ({ page }) => {
@@ -101,20 +106,19 @@ test('the same exercise twice in a day builds on the first run (FR-024)', async 
 
   // Coming back later: the first run is now what "last time" shows, and the
   // fields start from where it left off.
-  const lastTime = page.getByRole('region', { name: 'Минулого разу' })
-  await expect(lastTime).toContainText('80 × 10')
-  await expect(lastTime).toContainText('80 × 9')
+  await expect(page.getByTestId('set-previous')).toHaveText(['80 × 10', '80 × 9'])
+  await expect(page.getByTestId('set-summary')).toHaveCount(0)
   await expect(page.getByLabel('Вага, кг')).toHaveValue('80')
 
   await recordSet(page, '85', '8')
 
-  await expect(page.getByRole('region', { name: 'Цей раз' })).toContainText('85 × 8')
-  await expect(lastTime).toContainText('80 × 10')
+  await expect(page.getByTestId('set-summary')).toHaveText(['85 × 8'])
+  await expect(page.getByTestId('set-previous')).toHaveText(['80 × 10', '80 × 9'])
 
   // And it survives a reload, because the block is stored, not remembered.
   await page.reload()
-  await expect(page.getByRole('region', { name: 'Цей раз' })).toContainText('85 × 8')
-  await expect(page.getByRole('region', { name: 'Минулого разу' })).toContainText('80 × 10')
+  await expect(page.getByTestId('set-summary')).toHaveText(['85 × 8'])
+  await expect(page.getByTestId('set-previous')).toHaveText(['80 × 10', '80 × 9'])
 })
 
 test("deletes one of today's sets (FR-016)", async ({ page }) => {
@@ -126,7 +130,42 @@ test("deletes one of today's sets (FR-016)", async ({ page }) => {
 
   await page.getByRole('button', { name: 'Видалити підхід 100 × 5' }).click()
 
-  await expect(page.getByText('Ще жодного підходу — запишіть перший.')).toBeVisible()
+  // Nothing recorded and nothing before it, so there is no table left to show.
+  await expect(page.getByText('Цю вправу ще не робили')).toBeVisible()
+  await expect(page.getByRole('table')).toHaveCount(0)
+})
+
+test('reads last time set by set, in the same row (FR-030)', async ({ page }) => {
+  await addExercise(page, 'Присід')
+  await page.getByRole('link', { name: 'Присід' }).click()
+
+  // A ramp, which is the shape the column exists for.
+  await recordSet(page, '20', '20')
+  await recordSet(page, '40', '10')
+  await recordSet(page, '60', '8')
+  await page.getByRole('button', { name: 'Закінчити вправу' }).click()
+
+  // Back at the machine: the fields start from the ramp's first set, not its
+  // heaviest, so repeating it needs no typing at all.
+  await expect(page.getByTestId('set-previous')).toHaveText(['20 × 20', '40 × 10', '60 × 8'])
+  await expect(page.getByLabel('Вага, кг')).toHaveValue('20')
+  await expect(page.getByText('Підхід 1 · минулого разу 20 × 20')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Записати підхід' }).click()
+
+  // Set two now offers what set two was last time.
+  await expect(page.getByTestId('set-summary')).toHaveText(['20 × 20'])
+  await expect(page.getByLabel('Вага, кг')).toHaveValue('40')
+  await expect(page.getByText('Підхід 2 · минулого разу 40 × 10')).toBeVisible()
+
+  // Beating it reads across the row: 45 today against 40 last time.
+  await recordSet(page, '45', '10')
+  const second = page.getByRole('row').nth(2)
+  await expect(second).toContainText('40 × 10')
+  await expect(second).toContainText('45 × 10')
+
+  // And the set still to come keeps last time's number in view.
+  await expect(page.getByRole('row').nth(3)).toContainText('60 × 8')
 })
 
 test('records a set using only the steppers, typing nothing (FR-027)', async ({ page }) => {
