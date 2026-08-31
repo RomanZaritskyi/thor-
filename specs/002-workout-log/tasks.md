@@ -71,6 +71,29 @@ requirement has a test, not that every test has a requirement.
 - [x] T092 — Translate the not-found page and specify unresolved addresses · FR: FR-023
 - [x] T093 — Tag the untraceable tests; record `download.ts` and the real screen name in `plan.md` · FR: —
 
+## Blocks (amendment)
+
+The day was the wrong unit: coming back to a machine later the same day had
+nothing to compare against.
+
+### Tests first
+
+- [x] T100 — Failing unit tests for `isBlockOpen`, `setsInBlock`, `previousBlock`, `currentBlock`, including a block emptied by deletion · FR: FR-003, FR-006, FR-015
+- [x] T101 [P] — Failing unit tests for `prefillFrom` over blocks · FR: FR-020
+- [x] T102 [P] — Failing unit tests for `blocksFromLegacySets` · FR: —
+- [x] T103 — Failing store tests: closing a block survives reopening; a seeded version 1 database still reads cleanly and gains one closed block per exercise-day · FR: FR-010, FR-024
+- [x] T104 — Failing repository tests: consecutive sets share a block, finishing starts a new one, finishing twice is not an error, other exercises are untouched, and finishing is refused while unreadable · FR: FR-012, FR-024
+- [x] T105 — Failing component tests: finishing makes the run the one to build on, no finish when nothing is open, deleting from a block finished today · FR: FR-016, FR-024
+
+### Implementation
+
+- [x] T110 — `model.ts`: `Block`, `blockId` on sets, block selectors, legacy migration · FR: FR-003, FR-015, FR-020
+- [x] T111 — `store.ts`: blocks object store, `closeBlock`, IndexedDB upgrade from version 1 · FR: FR-010, FR-024
+- [x] T112 — `repository.ts`: open a block on first set, `finishExercise` · FR: FR-015, FR-024
+- [x] T113 — `transfer.ts`: version 2 envelope, reading a version 1 file through the same migration · FR: FR-017, FR-018
+- [x] T114 — Exercise screen: previous block, block in progress, finish button · FR: FR-003, FR-016, FR-024
+- [x] T115 — Playwright: the same exercise twice in a day · FR: FR-024
+
 ## Verification
 
 - [x] T080 — `pnpm verify` green · FR: —

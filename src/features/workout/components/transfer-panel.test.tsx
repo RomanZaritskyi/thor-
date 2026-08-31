@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { normalizeExerciseName, type Exercise, type SetEntry } from '../model'
+import { normalizeExerciseName, type Block, type Exercise, type SetEntry } from '../model'
 import { createTestRepository, renderWorkout } from '../test-utils'
 import { exportToJson } from '../transfer'
 import { TransferPanel } from './transfer-panel'
@@ -13,16 +13,25 @@ const legPress: Exercise = {
   createdAt: '2026-01-01T00:00:00.000Z',
 }
 
+const testBlock: Block = {
+  id: '99999999-9999-4999-8999-999999999991',
+  exerciseId: legPress.id,
+  date: '2026-02-20',
+  startedAt: '2026-02-20T10:00:00.000Z',
+  closedAt: '2026-02-20T10:30:00.000Z',
+}
+
 const entry: SetEntry = {
   id: '22222222-2222-4222-8222-222222222222',
   exerciseId: legPress.id,
+  blockId: '99999999-9999-4999-8999-999999999991',
   date: '2026-02-20',
   loggedAt: '2026-02-20T10:00:00.000Z',
   weightKg: 60,
   reps: 10,
 }
 
-const seeded = { exercises: [legPress], sets: [entry] }
+const seeded = { exercises: [legPress], blocks: [testBlock], sets: [entry] }
 
 function upload(json: string) {
   return new File([json], 'thor.json', { type: 'application/json' })
@@ -45,7 +54,10 @@ describe('<TransferPanel /> export (FR-017)', () => {
 })
 
 describe('<TransferPanel /> import (FR-018, FR-019)', () => {
-  const incoming = exportToJson({ exercises: [], sets: [] }, new Date('2026-03-02T08:00:00.000Z'))
+  const incoming = exportToJson(
+    { exercises: [], blocks: [], sets: [] },
+    new Date('2026-03-02T08:00:00.000Z'),
+  )
 
   it('names how much existing data will be replaced, before touching anything', async () => {
     const repository = createTestRepository(seeded)
@@ -67,7 +79,7 @@ describe('<TransferPanel /> import (FR-018, FR-019)', () => {
     await user.click(await screen.findByRole('button', { name: 'Замінити' }))
 
     expect(await screen.findByText(/Дані відновлено/)).toBeInTheDocument()
-    expect((await repository.load()).data).toEqual({ exercises: [], sets: [] })
+    expect((await repository.load()).data).toEqual({ exercises: [], blocks: [], sets: [] })
   })
 
   it('changes nothing when the confirmation is declined (FR-019)', async () => {

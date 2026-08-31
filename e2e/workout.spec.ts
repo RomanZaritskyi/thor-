@@ -88,6 +88,35 @@ test('filters the exercise list through the URL (FR-002)', async ({ page }) => {
   await expect(page).not.toHaveURL(/\?q=/)
 })
 
+test('the same exercise twice in a day builds on the first run (FR-024)', async ({ page }) => {
+  await addExercise(page, 'Жим ногами')
+  await page.getByRole('link', { name: 'Жим ногами' }).click()
+
+  // First run at the machine.
+  await recordSet(page, '80', '10')
+  await recordSet(page, '80', '9')
+  await expect(page.getByTestId('set-summary')).toHaveText(['80 × 10', '80 × 9'])
+
+  await page.getByRole('button', { name: 'Закінчити вправу' }).click()
+
+  // Coming back later: the first run is now what "last time" shows, and the
+  // fields start from where it left off.
+  const lastTime = page.getByRole('region', { name: 'Минулого разу' })
+  await expect(lastTime).toContainText('80 × 10')
+  await expect(lastTime).toContainText('80 × 9')
+  await expect(page.getByLabel('Вага, кг')).toHaveValue('80')
+
+  await recordSet(page, '85', '8')
+
+  await expect(page.getByRole('region', { name: 'Цей раз' })).toContainText('85 × 8')
+  await expect(lastTime).toContainText('80 × 10')
+
+  // And it survives a reload, because the block is stored, not remembered.
+  await page.reload()
+  await expect(page.getByRole('region', { name: 'Цей раз' })).toContainText('85 × 8')
+  await expect(page.getByRole('region', { name: 'Минулого разу' })).toContainText('80 × 10')
+})
+
 test("deletes one of today's sets (FR-016)", async ({ page }) => {
   await addExercise(page, 'Присід')
   await page.getByRole('link', { name: 'Присід' }).click()
@@ -97,7 +126,7 @@ test("deletes one of today's sets (FR-016)", async ({ page }) => {
 
   await page.getByRole('button', { name: 'Видалити підхід 100 × 5' }).click()
 
-  await expect(page.getByText('Сьогодні ще не було підходів.')).toBeVisible()
+  await expect(page.getByText('Ще жодного підходу — запишіть перший.')).toBeVisible()
 })
 
 test('an unknown address explains itself and leads back (FR-023)', async ({ page }) => {

@@ -66,7 +66,7 @@ export function DataGuard({
               variant="destructive"
               disabled={replaceAll.isPending}
               onClick={() => {
-                replaceAll.mutate({ exercises: [], sets: [] })
+                replaceAll.mutate({ exercises: [], blocks: [], sets: [] })
               }}
             >
               {ui.unreadable.eraseConfirm}

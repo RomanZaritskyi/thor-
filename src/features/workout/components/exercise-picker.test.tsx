@@ -26,7 +26,11 @@ function Harness() {
 
 describe('<ExercisePicker />', () => {
   it('lists every exercise (FR-001)', async () => {
-    const repository = createTestRepository({ exercises: [legPress, pulldown], sets: [] })
+    const repository = createTestRepository({
+      exercises: [legPress, pulldown],
+      blocks: [],
+      sets: [],
+    })
     renderWorkout(<Harness />, { repository })
 
     expect(await screen.findByRole('link', { name: 'Жим ногами' })).toBeInTheDocument()
@@ -34,7 +38,11 @@ describe('<ExercisePicker />', () => {
   })
 
   it('narrows the list as the query changes (FR-002)', async () => {
-    const repository = createTestRepository({ exercises: [legPress, pulldown], sets: [] })
+    const repository = createTestRepository({
+      exercises: [legPress, pulldown],
+      blocks: [],
+      sets: [],
+    })
     const { user } = renderWorkout(<Harness />, { repository })
 
     await user.type(await screen.findByLabelText('Пошук вправи'), 'ног')
@@ -45,14 +53,14 @@ describe('<ExercisePicker />', () => {
 
   it('explains an empty list and a fruitless search differently (FR-021)', async () => {
     const { user, unmount } = renderWorkout(<Harness />, {
-      repository: createTestRepository({ exercises: [], sets: [] }),
+      repository: createTestRepository({ exercises: [], blocks: [], sets: [] }),
     })
 
     expect(await screen.findByText(/Список порожній/)).toBeInTheDocument()
     unmount()
 
     const second = renderWorkout(<Harness />, {
-      repository: createTestRepository({ exercises: [legPress], sets: [] }),
+      repository: createTestRepository({ exercises: [legPress], blocks: [], sets: [] }),
     })
     await second.user.type(await screen.findByLabelText('Пошук вправи'), 'zzz')
 
@@ -62,7 +70,7 @@ describe('<ExercisePicker />', () => {
 
   it('adds an exercise and makes it findable at once (FR-008)', async () => {
     const { user } = renderWorkout(<Harness />, {
-      repository: createTestRepository({ exercises: [], sets: [] }),
+      repository: createTestRepository({ exercises: [], blocks: [], sets: [] }),
     })
 
     await user.type(await screen.findByLabelText('Назва нової вправи'), 'Присід')
@@ -73,7 +81,7 @@ describe('<ExercisePicker />', () => {
 
   it('clears the add field after a successful add, ready for the next (FR-008)', async () => {
     const { user } = renderWorkout(<Harness />, {
-      repository: createTestRepository({ exercises: [], sets: [] }),
+      repository: createTestRepository({ exercises: [], blocks: [], sets: [] }),
     })
 
     const field = await screen.findByLabelText('Назва нової вправи')
@@ -86,7 +94,7 @@ describe('<ExercisePicker />', () => {
 
   it('adds a second exercise right after the first, without losing form state (FR-008)', async () => {
     const { user } = renderWorkout(<Harness />, {
-      repository: createTestRepository({ exercises: [], sets: [] }),
+      repository: createTestRepository({ exercises: [], blocks: [], sets: [] }),
     })
 
     for (const name of ['Присід', 'Станова']) {
@@ -97,7 +105,7 @@ describe('<ExercisePicker />', () => {
   })
 
   it('refuses a name that differs only by case or spacing (FR-009)', async () => {
-    const repository = createTestRepository({ exercises: [legPress], sets: [] })
+    const repository = createTestRepository({ exercises: [legPress], blocks: [], sets: [] })
     const { user } = renderWorkout(<Harness />, { repository })
 
     await user.type(await screen.findByLabelText('Назва нової вправи'), 'жим  ногами')
@@ -108,7 +116,7 @@ describe('<ExercisePicker />', () => {
   })
 
   it('refuses a blank name without calling the repository (FR-022)', async () => {
-    const repository = createTestRepository({ exercises: [], sets: [] })
+    const repository = createTestRepository({ exercises: [], blocks: [], sets: [] })
     const { user } = renderWorkout(<Harness />, { repository })
 
     await user.click(await screen.findByRole('button', { name: 'Додати вправу' }))

@@ -89,31 +89,59 @@ the workout provider so `src/test/` stays feature-agnostic.
 
 ## Requirement → design map
 
-| FR     | Where it lives                                               | How it is proven                                                       |
-| ------ | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| FR-001 | `routes/index.tsx`                                           | e2e: a cold open lands on the picker                                   |
-| FR-002 | `model.ts::searchExercises`                                  | unit tests for case, whitespace, substring, no match                   |
-| FR-003 | `model.ts::lastSession`                                      | unit tests; component test on the exercise screen                      |
-| FR-004 | `components/exercise-screen`                                 | component test for the no-history message                              |
-| FR-005 | `repository.ts::recordSet` + `components/record-set-form`    | component test: recording shows it in today's list                     |
-| FR-006 | `model.ts::groupSetsByDate` ordering by `loggedAt`           | unit test: identical sets are kept, in order                           |
-| FR-007 | `model.ts::setDraftSchema`                                   | unit tests for 0 reps, negative weight, 2.5, 0                         |
-| FR-008 | `repository.ts::addExercise` + picker                        | component test: added and immediately findable                         |
-| FR-009 | `model.ts::normalizeExerciseName` + a unique index           | unit tests for case and whitespace variants                            |
-| FR-010 | `store.ts` IndexedDB adapter                                 | store test round-trips through `fake-indexeddb`                        |
-| FR-011 | `vite.config.ts` PWA precache                                | e2e with the context offline from a cold start                         |
-| FR-012 | `store.ts` load result + `components/unreadable-data-screen` | store test: a corrupt row reports unreadable and **no write follows**  |
-| FR-013 | `repository.ts` accepts an id, never a name                  | unit test: recording against an unknown id rejects                     |
-| FR-014 | `model.ts` note field + `components/set-list`                | component test: the note shows beside the numbers                      |
-| FR-015 | `model.ts::todayKey` from the injected clock                 | unit tests across a local-midnight boundary                            |
-| FR-016 | `repository.ts::deleteSet` guarded by date                   | unit tests: today deletable, an earlier day is not                     |
-| FR-017 | `transfer.ts::exportData`                                    | unit test on the serialised shape                                      |
-| FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`     | unit test: export, record more, import, only the exported data remains |
-| FR-019 | `components/transfer-panel`                                  | component tests: the count is named; declining changes nothing         |
-| FR-020 | `model.ts::prefillFrom`                                      | unit tests; component test that the fields arrive filled               |
-| FR-021 | `components/exercise-picker` empty states                    | component test distinguishing both states                              |
-| FR-022 | `model.ts::exerciseNameSchema` + picker                      | unit test on the schema; component test that nothing is added          |
-| FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen` | e2e on an unknown URL; component test on an unknown exercise           |
+| FR     | Where it lives                                               | How it is proven                                                                              |
+| ------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| FR-001 | `routes/index.tsx`                                           | e2e: a cold open lands on the picker                                                          |
+| FR-002 | `model.ts::searchExercises`                                  | unit tests for case, whitespace, substring, no match                                          |
+| FR-003 | `model.ts::previousBlock`                                    | unit tests; component test on the exercise screen                                             |
+| FR-004 | `components/exercise-screen`                                 | component test for the no-history message                                                     |
+| FR-005 | `repository.ts::recordSet` + `components/record-set-form`    | component test: recording shows it in today's list                                            |
+| FR-006 | `model.ts::groupSetsByDate` ordering by `loggedAt`           | unit test: identical sets are kept, in order                                                  |
+| FR-007 | `model.ts::setDraftSchema`                                   | unit tests for 0 reps, negative weight, 2.5, 0                                                |
+| FR-008 | `repository.ts::addExercise` + picker                        | component test: added and immediately findable                                                |
+| FR-009 | `model.ts::normalizeExerciseName` + a unique index           | unit tests for case and whitespace variants                                                   |
+| FR-010 | `store.ts` IndexedDB adapter                                 | store test round-trips through `fake-indexeddb`                                               |
+| FR-011 | `vite.config.ts` PWA precache                                | e2e with the context offline from a cold start                                                |
+| FR-012 | `store.ts` load result + `components/unreadable-data-screen` | store test: a corrupt row reports unreadable and **no write follows**                         |
+| FR-013 | `repository.ts` accepts an id, never a name                  | unit test: recording against an unknown id rejects                                            |
+| FR-014 | `model.ts` note field + `components/set-list`                | component test: the note shows beside the numbers                                             |
+| FR-015 | `model.ts::isBlockOpen` + `repository.ts::recordSet`         | unit tests across a local-midnight boundary and a hand-closed block                           |
+| FR-016 | `repository.ts::deleteSet` guarded by date                   | unit tests: today deletable including a closed block, an earlier day is not                   |
+| FR-017 | `transfer.ts::exportData`                                    | unit test on the serialised shape                                                             |
+| FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`     | unit test: export, record more, import, only the exported data remains                        |
+| FR-019 | `components/transfer-panel`                                  | component tests: the count is named; declining changes nothing                                |
+| FR-020 | `model.ts::prefillFrom`                                      | unit tests; component test that the fields follow the block in progress                       |
+| FR-021 | `components/exercise-picker` empty states                    | component test distinguishing both states                                                     |
+| FR-022 | `model.ts::exerciseNameSchema` + picker                      | unit test on the schema; component test that nothing is added                                 |
+| FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen` | e2e on an unknown URL; component test on an unknown exercise                                  |
+| FR-024 | `repository.ts::finishExercise` + the screen                 | repository tests for block boundaries; component and e2e tests for the twice-in-a-day journey |
+
+## Blocks (amendment)
+
+The first version made the calendar day the unit of "last time". That was wrong
+for the way its author trains: he uses whichever machine is free, so he comes back
+to the same one later the same day — and the app had nothing to compare against,
+because the morning's sets were merged into the same list as the evening's.
+
+A **block** is now the unit: one run at one exercise. It closes when he finishes
+it (FR-024) and, failing that, when the day turns (FR-015). The second half is not
+a nicety: forgetting to press finish is certain, and a block left open overnight
+would swallow tomorrow's first attempt into yesterday's numbers.
+
+`previousBlock` therefore means "the most recent block that is not the one in
+progress" — which resolves to this morning's run when he comes back to a machine,
+and to the last day he did it when he comes to it fresh. One rule, both cases.
+
+Rejected: an automatic gap of N hours, which needs no button but decides
+invisibly and would be wrong exactly when it matters; and a workout-level object
+grouping exercises, which is a second thing to forget to close for no gain, since
+the premise is that today's session was never planned.
+
+The existing database is migrated, not discarded. `blocksFromLegacySets` reads
+pre-block data as what it actually was — one closed run per exercise per day —
+and is used both by the IndexedDB upgrade and by importing a version 1 export, so
+the rule that reinterprets somebody's training history exists once and is tested
+on its own.
 
 ## Complexity budget
 
@@ -146,6 +174,11 @@ the workout provider so `src/test/` stays feature-agnostic.
   after the fact, when `/analyze` found three of them already built and tested
   with no requirement behind them. They are the states nobody thinks to specify
   and everybody eventually sees; the next feature should list them up front.
+- **The migration touches real data.** The upgrade from version 1 rewrites every
+  stored set to carry a block. It runs once, inside the IndexedDB upgrade
+  transaction, and is covered by tests that seed a genuine version 1 database and
+  assert the log still reads cleanly afterwards — because the failure mode is not
+  a wrong number on screen, it is the app declaring a year of training unreadable.
 - **FR-012 is easy to regress.** Any future code path that writes without first
   checking the load result quietly reintroduces exactly the data loss the
   requirement forbids. The guard lives in the repository, and its test asserts the

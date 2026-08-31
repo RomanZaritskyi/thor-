@@ -14,7 +14,7 @@ import type { WorkoutData } from './transfer'
 
 /** Deterministic ids and a clock that ticks a second per read. */
 function build(
-  seed: WorkoutData = { exercises: [], sets: [] },
+  seed: WorkoutData = { exercises: [], blocks: [], sets: [] },
   store: WorkoutStore = createMemoryStore(seed),
 ): WorkoutRepository {
   let ids = 0
@@ -51,7 +51,7 @@ describe('adding exercises (FR-008, FR-009)', () => {
   })
 
   it('refuses a name differing only by case or spacing (FR-009)', async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
 
     await expect(repository.addExercise('жим  ногами')).rejects.toThrow(DuplicateExerciseError)
     await expect(repository.addExercise('  ЖИМ НОГАМИ ')).rejects.toThrow(DuplicateExerciseError)
@@ -64,7 +64,7 @@ describe('adding exercises (FR-008, FR-009)', () => {
 
 describe('today (FR-015)', () => {
   it('reports the local day of the same clock that dates a set', async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
 
     const day = repository.today()
     const entry = await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
@@ -76,7 +76,7 @@ describe('today (FR-015)', () => {
 
 describe('recording sets (FR-005, FR-013, FR-015)', () => {
   it('records a set against an exercise, dated today', async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
 
     const entry = await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
 
@@ -85,7 +85,7 @@ describe('recording sets (FR-005, FR-013, FR-015)', () => {
   })
 
   it('keeps an optional note (FR-014)', async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
 
     expect(
       (await repository.recordSet(legPress.id, { weightKg: 60, reps: 10, note: ' Hammer ' })).note,
@@ -101,14 +101,14 @@ describe('recording sets (FR-005, FR-013, FR-015)', () => {
   })
 
   it('refuses an invalid set (FR-007)', async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
 
     await expect(repository.recordSet(legPress.id, { weightKg: 60, reps: 0 })).rejects.toThrow()
     await expect(repository.recordSet(legPress.id, { weightKg: -1, reps: 5 })).rejects.toThrow()
   })
 
   it('appends several sets in the order recorded (FR-006)', async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
 
     await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
     await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
@@ -122,9 +122,82 @@ describe('recording sets (FR-005, FR-013, FR-015)', () => {
   })
 })
 
+describe('finishing an exercise (FR-024)', () => {
+  it('opens one block for consecutive sets, and a new one after finishing', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+
+    await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+    await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+
+    const before = (await repository.load()).data
+    expect(before.blocks).toHaveLength(1)
+    expect(new Set(before.sets.map((entry) => entry.blockId)).size).toBe(1)
+
+    await repository.finishExercise(legPress.id)
+    await repository.recordSet(legPress.id, { weightKg: 65, reps: 8 })
+
+    const after = (await repository.load()).data
+    expect(after.blocks).toHaveLength(2)
+    expect(new Set(after.sets.map((entry) => entry.blockId)).size).toBe(2)
+  })
+
+  it('closes the block it finishes, and leaves the new one open', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+
+    await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+    await repository.finishExercise(legPress.id)
+
+    const closed = (await repository.load()).data.blocks
+    expect(closed[0]?.closedAt).not.toBeNull()
+
+    await repository.recordSet(legPress.id, { weightKg: 65, reps: 8 })
+    const open = (await repository.load()).data.blocks.filter((block) => block.closedAt === null)
+    expect(open).toHaveLength(1)
+  })
+
+  it('does nothing when there is no open block, so pressing twice is not an error', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+
+    await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+    await repository.finishExercise(legPress.id)
+
+    await expect(repository.finishExercise(legPress.id)).resolves.toBeUndefined()
+    expect((await repository.load()).data.blocks).toHaveLength(1)
+  })
+
+  it('leaves other exercises alone', async () => {
+    const squat = {
+      id: '55555555-5555-4555-8555-555555555555',
+      name: 'Присід',
+      normalizedName: normalizeExerciseName('Присід'),
+      createdAt: '2026-01-01T00:00:00.000Z',
+    }
+    const repository = build({ exercises: [legPress, squat], blocks: [], sets: [] })
+
+    await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+    await repository.recordSet(squat.id, { weightKg: 100, reps: 5 })
+    await repository.finishExercise(legPress.id)
+
+    const open = (await repository.load()).data.blocks.filter((block) => block.closedAt === null)
+    expect(open.map((block) => block.exerciseId)).toEqual([squat.id])
+  })
+
+  it('refuses to finish while the store is unreadable (FR-012)', async () => {
+    const store = createMemoryStore(
+      { exercises: [legPress], blocks: [], sets: [] },
+      { unreadable: 'зіпсовано' },
+    )
+    const closeBlock = vi.spyOn(store, 'closeBlock')
+    const repository = build({ exercises: [], blocks: [], sets: [] }, store)
+
+    await expect(repository.finishExercise(legPress.id)).rejects.toThrow(UnreadableStoreError)
+    expect(closeBlock).not.toHaveBeenCalled()
+  })
+})
+
 describe('deleting sets (FR-016)', () => {
   it("deletes one of today's sets", async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
     const entry = await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
 
     await repository.deleteSet(entry.id)
@@ -136,12 +209,25 @@ describe('deleting sets (FR-016)', () => {
     const older = {
       id: '44444444-4444-4444-8444-444444444444',
       exerciseId: legPress.id,
+      blockId: '99999999-9999-4999-8999-999999999991',
       date: '2026-02-01',
       loggedAt: '2026-02-01T10:00:00.000Z',
       weightKg: 50,
       reps: 8,
     }
-    const repository = build({ exercises: [legPress], sets: [older] })
+    const repository = build({
+      exercises: [legPress],
+      blocks: [
+        {
+          id: '99999999-9999-4999-8999-999999999991',
+          exerciseId: legPress.id,
+          date: '2026-02-01',
+          startedAt: '2026-02-01T10:00:00.000Z',
+          closedAt: '2026-02-01T10:30:00.000Z',
+        },
+      ],
+      sets: [older],
+    })
 
     await expect(repository.deleteSet(older.id)).rejects.toThrow(ImmutablePastError)
     expect((await repository.load()).data.sets).toHaveLength(1)
@@ -150,24 +236,24 @@ describe('deleting sets (FR-016)', () => {
 
 describe('import (FR-018)', () => {
   it('replaces everything currently recorded', async () => {
-    const repository = build({ exercises: [legPress], sets: [] })
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
     await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
 
-    await repository.replaceAll({ exercises: [], sets: [] })
+    await repository.replaceAll({ exercises: [], blocks: [], sets: [] })
 
-    expect((await repository.load()).data).toEqual({ exercises: [], sets: [] })
+    expect((await repository.load()).data).toEqual({ exercises: [], blocks: [], sets: [] })
   })
 })
 
 describe('unreadable storage refuses every write (FR-012)', () => {
   function unreadable() {
     const store = createMemoryStore(
-      { exercises: [legPress], sets: [] },
+      { exercises: [legPress], blocks: [], sets: [] },
       { unreadable: 'зіпсовано' },
     )
 
     return {
-      repository: build({ exercises: [], sets: [] }, store),
+      repository: build({ exercises: [], blocks: [], sets: [] }, store),
       addExercise: vi.spyOn(store, 'addExercise'),
       addSet: vi.spyOn(store, 'addSet'),
       deleteSet: vi.spyOn(store, 'deleteSet'),
@@ -208,7 +294,7 @@ describe('unreadable storage refuses every write (FR-012)', () => {
   it('allows an explicit replaceAll, because that is the deliberate way out', async () => {
     const { repository, replaceAll } = unreadable()
 
-    await repository.replaceAll({ exercises: [], sets: [] })
+    await repository.replaceAll({ exercises: [], blocks: [], sets: [] })
 
     expect(replaceAll).toHaveBeenCalledOnce()
   })

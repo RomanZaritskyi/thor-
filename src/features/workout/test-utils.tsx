@@ -18,7 +18,7 @@ export const TODAY = '2026-03-01'
 
 /** A repository over memory, with deterministic ids and a clock pinned to TODAY. */
 export function createTestRepository(
-  seed: WorkoutData = { exercises: [], sets: [] },
+  seed: WorkoutData = { exercises: [], blocks: [], sets: [] },
   options: { unreadable?: string } = {},
 ): WorkoutRepository {
   let ids = 0

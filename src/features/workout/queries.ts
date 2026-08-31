@@ -50,6 +50,16 @@ export function useRecordSet() {
   })
 }
 
+export function useFinishExercise() {
+  const repository = useWorkoutRepository()
+  const invalidate = useInvalidate()
+
+  return useMutation({
+    mutationFn: (exerciseId: string) => repository.finishExercise(exerciseId),
+    onSuccess: invalidate,
+  })
+}
+
 export function useDeleteSet() {
   const repository = useWorkoutRepository()
   const invalidate = useInvalidate()

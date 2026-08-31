@@ -1,8 +1,10 @@
 import {
   exerciseNameSchema,
   normalizeExerciseName,
+  openBlock,
   setDraftSchema,
   todayKey,
+  type Block,
   type Exercise,
   type SetEntry,
 } from './model'
@@ -54,6 +56,12 @@ export interface WorkoutRepository {
   load(): Promise<LoadResult>
   addExercise(name: string): Promise<Exercise>
   recordSet(exerciseId: string, draft: unknown): Promise<SetEntry>
+  /**
+   * FR-024 — closes the exercise's open block, so the next set starts a fresh
+   * one and this run becomes what "last time" shows. A no-op when nothing is
+   * open: pressing twice must not be an error.
+   */
+  finishExercise(exerciseId: string): Promise<void>
   deleteSet(id: string): Promise<void>
   replaceAll(data: WorkoutData): Promise<void>
 }
@@ -120,19 +128,48 @@ export function createWorkoutRepository({
 
       const draft = setDraftSchema.parse(rawDraft)
       const at = now()
+      const today = todayKey(at)
+      const existing = openBlock(data.blocks, exerciseId, today)
+
+      // FR-015: the first set after the last block closed opens the next one.
+      const opened: Block | undefined =
+        existing === undefined
+          ? {
+              id: createId(),
+              exerciseId,
+              date: today,
+              startedAt: at.toISOString(),
+              closedAt: null,
+            }
+          : undefined
+      const block = existing ?? opened
+
+      if (block === undefined) throw new Error('unreachable: no block to record against')
+
       const entry: SetEntry = {
         id: createId(),
         exerciseId,
-        date: todayKey(at),
+        blockId: block.id,
+        date: today,
         loggedAt: at.toISOString(),
         weightKg: draft.weightKg,
         reps: draft.reps,
         ...(draft.note === undefined ? {} : { note: draft.note }),
       }
 
-      await store.addSet(entry)
+      await store.addSet(entry, opened)
 
       return entry
+    },
+
+    finishExercise: async (exerciseId) => {
+      const data = await readable()
+      const at = now()
+      const open = openBlock(data.blocks, exerciseId, todayKey(at))
+
+      if (open === undefined) return
+
+      await store.closeBlock(open.id, at.toISOString())
     },
 
     deleteSet: async (id) => {

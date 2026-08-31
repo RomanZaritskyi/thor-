@@ -12,7 +12,7 @@ const legPress: Exercise = {
   createdAt: '2026-01-01T00:00:00.000Z',
 }
 
-const seeded = { exercises: [legPress], sets: [] }
+const seeded = { exercises: [legPress], blocks: [], sets: [] }
 
 function renderGuard(unreadable?: string, saveFile = vi.fn()) {
   const repository = createTestRepository(seeded, unreadable === undefined ? {} : { unreadable })
@@ -68,7 +68,7 @@ describe('<DataGuard /> (FR-012)', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Так, стерти все' }))
 
-    expect((await repository.load()).data).toEqual({ exercises: [], sets: [] })
+    expect((await repository.load()).data).toEqual({ exercises: [], blocks: [], sets: [] })
   })
 
   it('leaves everything alone when the erase is declined', async () => {

@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  blocksFromLegacySets,
+  currentBlock,
   exerciseNameSchema,
-  groupSetsByDate,
-  lastSession,
+  isBlockOpen,
   normalizeExerciseName,
   prefillFrom,
+  previousBlock,
   searchExercises,
   setDraftSchema,
+  setsInBlock,
   todayKey,
 } from './model'
-import type { Exercise, SetEntry } from './model'
+import type { Block, Exercise, LegacySetEntry, SetEntry } from './model'
 
 function exercise(name: string, id = name): Exercise {
   return {
@@ -21,11 +24,26 @@ function exercise(name: string, id = name): Exercise {
   }
 }
 
+const TODAY = '2026-03-01'
+const EXERCISE = 'e1'
+
+function block(overrides: Partial<Block> = {}): Block {
+  return {
+    id: 'b1',
+    exerciseId: EXERCISE,
+    date: TODAY,
+    startedAt: '2026-03-01T10:00:00.000Z',
+    closedAt: null,
+    ...overrides,
+  }
+}
+
 function set(overrides: Partial<SetEntry> = {}): SetEntry {
   return {
     id: 's1',
-    exerciseId: 'e1',
-    date: '2026-03-01',
+    exerciseId: EXERCISE,
+    blockId: 'b1',
+    date: TODAY,
     loggedAt: '2026-03-01T10:00:00.000Z',
     weightKg: 60,
     reps: 10,
@@ -106,15 +124,31 @@ describe('todayKey (FR-015)', () => {
   })
 })
 
-describe('groupSetsByDate (FR-006)', () => {
-  it('keeps sets of one day in the order they were recorded', () => {
+describe('isBlockOpen (FR-015)', () => {
+  it('is open when nothing closed it and the day has not turned', () => {
+    expect(isBlockOpen(block(), TODAY)).toBe(true)
+  })
+
+  it('is closed once finished by hand (FR-024)', () => {
+    expect(isBlockOpen(block({ closedAt: '2026-03-01T11:00:00.000Z' }), TODAY)).toBe(false)
+  })
+
+  it('is closed by the day turning, finished or not', () => {
+    // Forgetting to finish is certain; an overnight block would otherwise swallow
+    // tomorrow's first attempt into yesterday's numbers.
+    expect(isBlockOpen(block({ date: '2026-02-28' }), TODAY)).toBe(false)
+  })
+})
+
+describe('setsInBlock (FR-006)', () => {
+  it('keeps the order the sets were recorded', () => {
     const sets = [
-      set({ id: 'b', loggedAt: '2026-03-01T11:00:00.000Z' }),
+      set({ id: 'c', loggedAt: '2026-03-01T10:02:00.000Z' }),
       set({ id: 'a', loggedAt: '2026-03-01T10:00:00.000Z' }),
-      set({ id: 'c', loggedAt: '2026-03-01T12:00:00.000Z' }),
+      set({ id: 'b', loggedAt: '2026-03-01T10:01:00.000Z' }),
     ]
 
-    expect(groupSetsByDate(sets)[0]?.sets.map((s) => s.id)).toEqual(['a', 'b', 'c'])
+    expect(setsInBlock(sets, 'b1').map((entry) => entry.id)).toEqual(['a', 'b', 'c'])
   })
 
   it('keeps identical sets as separate entries', () => {
@@ -124,69 +158,163 @@ describe('groupSetsByDate (FR-006)', () => {
       set({ id: 'c', loggedAt: '2026-03-01T10:02:00.000Z' }),
     ]
 
-    expect(groupSetsByDate(sets)[0]?.sets).toHaveLength(3)
+    expect(setsInBlock(sets, 'b1')).toHaveLength(3)
   })
 
-  it('orders days most recent first', () => {
-    const sets = [
-      set({ id: 'old', date: '2026-02-01', loggedAt: '2026-02-01T10:00:00.000Z' }),
-      set({ id: 'new', date: '2026-03-01', loggedAt: '2026-03-01T10:00:00.000Z' }),
-    ]
-
-    expect(groupSetsByDate(sets).map((day) => day.date)).toEqual(['2026-03-01', '2026-02-01'])
+  it('ignores sets from other blocks', () => {
+    expect(setsInBlock([set({ blockId: 'other' })], 'b1')).toEqual([])
   })
 })
 
-describe('lastSession (FR-003)', () => {
-  const sets = [
-    set({ id: 'a', date: '2026-02-01', loggedAt: '2026-02-01T10:00:00.000Z' }),
-    set({ id: 'b', date: '2026-02-20', loggedAt: '2026-02-20T10:00:00.000Z' }),
-    set({ id: 'c', date: '2026-02-20', loggedAt: '2026-02-20T10:05:00.000Z' }),
-  ]
+describe('previousBlock and currentBlock (FR-003, FR-024)', () => {
+  const yesterday = block({
+    id: 'old',
+    date: '2026-02-20',
+    startedAt: '2026-02-20T10:00:00.000Z',
+    closedAt: '2026-02-20T10:30:00.000Z',
+  })
+  const earlierToday = block({
+    id: 'first',
+    startedAt: '2026-03-01T09:00:00.000Z',
+    closedAt: '2026-03-01T09:30:00.000Z',
+  })
+  const open = block({ id: 'second', startedAt: '2026-03-01T18:00:00.000Z' })
 
-  it('returns the most recent day and all of its sets', () => {
-    const result = lastSession(sets, '2026-03-01')
+  const inOld = set({ id: 'so', blockId: 'old' })
+  const inFirst = set({ id: 'sf', blockId: 'first' })
 
-    expect(result?.date).toBe('2026-02-20')
-    expect(result?.sets.map((s) => s.id)).toEqual(['b', 'c'])
+  it('shows the last closed block when nothing is in progress', () => {
+    expect(previousBlock([yesterday], [inOld], EXERCISE, TODAY)?.block.id).toBe('old')
+    expect(currentBlock([yesterday], [inOld], EXERCISE, TODAY)).toBeUndefined()
   })
 
-  it('excludes today, because today is not "last time"', () => {
-    const withToday = [...sets, set({ id: 'today', date: '2026-03-01' })]
+  it('shows the block in progress separately from the one before it', () => {
+    const blocks = [yesterday, earlierToday, open]
+    const sets = [inOld, inFirst]
 
-    expect(lastSession(withToday, '2026-03-01')?.date).toBe('2026-02-20')
+    expect(currentBlock(blocks, sets, EXERCISE, TODAY)?.block.id).toBe('second')
+    expect(previousBlock(blocks, sets, EXERCISE, TODAY)?.block.id).toBe('first')
   })
 
-  it('returns undefined when there is no earlier session (FR-004)', () => {
-    expect(lastSession([set({ date: '2026-03-01' })], '2026-03-01')).toBeUndefined()
-    expect(lastSession([], '2026-03-01')).toBeUndefined()
+  it('makes a block finished today the thing to build on when starting again (FR-024)', () => {
+    // The whole point: a second attempt at the same machine has the first to beat.
+    expect(
+      previousBlock([yesterday, earlierToday], [inOld, inFirst], EXERCISE, TODAY)?.block.id,
+    ).toBe('first')
+  })
+
+  it('carries the sets of the block it returns', () => {
+    const sets = [set({ id: 's', blockId: 'first' })]
+
+    expect(previousBlock([earlierToday], sets, EXERCISE, TODAY)?.sets.map((e) => e.id)).toEqual([
+      's',
+    ])
+  })
+
+  it('returns nothing for an exercise with no history (FR-004)', () => {
+    expect(previousBlock([], [], EXERCISE, TODAY)).toBeUndefined()
+  })
+
+  it('ignores a block whose sets were all deleted', () => {
+    // Otherwise "last time" would show an empty panel that says nothing.
+    expect(previousBlock([earlierToday], [], EXERCISE, TODAY)).toBeUndefined()
+  })
+
+  it('ignores blocks of other exercises', () => {
+    const other = block({ id: 'x', exerciseId: 'other' })
+
+    expect(previousBlock([other], [set({ blockId: 'x' })], EXERCISE, TODAY)).toBeUndefined()
+  })
+})
+
+describe('blocksFromLegacySets (migration)', () => {
+  let n = 0
+  const ids = () => `block-${String(++n)}`
+
+  function legacy(overrides: Partial<LegacySetEntry> = {}): LegacySetEntry {
+    return {
+      id: 's1',
+      exerciseId: EXERCISE,
+      date: TODAY,
+      loggedAt: '2026-03-01T10:00:00.000Z',
+      weightKg: 60,
+      reps: 10,
+      ...overrides,
+    }
+  }
+
+  it('reads one run per exercise per day, as that data actually was', () => {
+    n = 0
+    const { blocks, sets } = blocksFromLegacySets(
+      [
+        legacy({ id: 'a', loggedAt: '2026-03-01T10:00:00.000Z' }),
+        legacy({ id: 'b', loggedAt: '2026-03-01T10:05:00.000Z' }),
+        legacy({ id: 'c', date: '2026-02-20', loggedAt: '2026-02-20T10:00:00.000Z' }),
+      ],
+      ids,
+    )
+
+    expect(blocks).toHaveLength(2)
+    expect(sets).toHaveLength(3)
+    expect(new Set(sets.filter((e) => e.date === TODAY).map((e) => e.blockId)).size).toBe(1)
+  })
+
+  it('splits runs of different exercises on the same day', () => {
+    n = 0
+    const { blocks } = blocksFromLegacySets(
+      [legacy({ id: 'a' }), legacy({ id: 'b', exerciseId: 'e2' })],
+      ids,
+    )
+
+    expect(blocks).toHaveLength(2)
+  })
+
+  it('closes what it migrates — finished history, not something to append to', () => {
+    n = 0
+    const { blocks } = blocksFromLegacySets(
+      [
+        legacy({ id: 'a', loggedAt: '2026-03-01T10:00:00.000Z' }),
+        legacy({ id: 'b', loggedAt: '2026-03-01T10:05:00.000Z' }),
+      ],
+      ids,
+    )
+
+    expect(blocks[0]?.startedAt).toBe('2026-03-01T10:00:00.000Z')
+    expect(blocks[0]?.closedAt).toBe('2026-03-01T10:05:00.000Z')
+  })
+
+  it('handles an empty log', () => {
+    expect(blocksFromLegacySets([], ids)).toEqual({ blocks: [], sets: [] })
   })
 })
 
 describe('prefillFrom (FR-020)', () => {
-  it("prefers today's most recent set", () => {
+  const closed = block({ id: 'first', closedAt: '2026-03-01T09:30:00.000Z' })
+  const open = block({ id: 'second', startedAt: '2026-03-01T18:00:00.000Z' })
+
+  it('follows the last set of the block in progress', () => {
     const sets = [
-      set({ id: 'past', date: '2026-02-01', weightKg: 50, reps: 8 }),
-      set({ id: 'today', date: '2026-03-01', weightKg: 65, reps: 12 }),
+      set({ id: 'a', blockId: 'first', weightKg: 50, reps: 8 }),
+      set({ id: 'b', blockId: 'second', weightKg: 65, reps: 12 }),
     ]
 
-    expect(prefillFrom(sets, '2026-03-01')).toEqual({ weightKg: 65, reps: 12 })
+    expect(prefillFrom([closed, open], sets, EXERCISE, TODAY)).toEqual({ weightKg: 65, reps: 12 })
   })
 
-  it('falls back to the previous session when today is empty', () => {
-    const sets = [set({ date: '2026-02-01', weightKg: 50, reps: 8 })]
+  it('falls back to the previous block when starting a fresh one', () => {
+    const sets = [set({ blockId: 'first', weightKg: 50, reps: 8 })]
 
-    expect(prefillFrom(sets, '2026-03-01')).toEqual({ weightKg: 50, reps: 8 })
+    expect(prefillFrom([closed], sets, EXERCISE, TODAY)).toEqual({ weightKg: 50, reps: 8 })
   })
 
   it('returns undefined for an exercise with no history', () => {
-    expect(prefillFrom([], '2026-03-01')).toBeUndefined()
+    expect(prefillFrom([], [], EXERCISE, TODAY)).toBeUndefined()
   })
 
   it('carries no note across — a note describes one set, not the next', () => {
-    const sets = [set({ date: '2026-02-01', note: 'Hammer, 3rd hole' })]
+    const sets = [set({ blockId: 'first', note: 'Hammer, 3rd hole' })]
 
-    expect(prefillFrom(sets, '2026-03-01')).not.toHaveProperty('note')
+    expect(prefillFrom([closed], sets, EXERCISE, TODAY)).not.toHaveProperty('note')
   })
 })
 

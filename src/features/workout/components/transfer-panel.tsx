@@ -20,7 +20,7 @@ export function TransferPanel({ saveFile = downloadFile }: { saveFile?: SaveFile
   const replaceAll = useReplaceAll()
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
 
-  const current = workout.data?.data ?? { exercises: [], sets: [] }
+  const current = workout.data?.data ?? { exercises: [], blocks: [], sets: [] }
 
   async function chooseFile(file: File | undefined) {
     if (file === undefined) return
