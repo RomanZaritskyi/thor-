@@ -82,6 +82,69 @@ export function todayKey(now: Date): string {
   return `${String(now.getFullYear())}-${month}-${day}`
 }
 
+/**
+ * FR-027 — the arithmetic behind the −/+ controls, kept out of the component so
+ * the awkward parts are testable: an empty field, a value that is not a number,
+ * and floating-point dust from fractional steps.
+ *
+ * An empty field starts at its minimum, so the first press always produces a
+ * valid value rather than jumping a step past it.
+ */
+export function stepValue(current: string, step: number, min: number): string {
+  const parsed = Number(current)
+  const next =
+    current.trim() === '' || !Number.isFinite(parsed) ? min : Math.max(min, parsed + step)
+
+  return String(Math.round(next * 10) / 10)
+}
+
+/** Calendar days between two `YYYY-MM-DD` keys. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (new Date(`${to}T00:00:00`).getTime() - new Date(`${from}T00:00:00`).getTime()) / 86_400_000,
+  )
+}
+
+/** The most recent set of one exercise. Serves both FR-028's order and FR-029's label. */
+export function lastRecordedSet(
+  sets: readonly SetEntry[],
+  exerciseId: string,
+): SetEntry | undefined {
+  return sets
+    .filter((entry) => entry.exerciseId === exerciseId)
+    .reduce<SetEntry | undefined>(
+      (latest, entry) =>
+        latest === undefined || entry.loggedAt > latest.loggedAt ? entry : latest,
+      undefined,
+    )
+}
+
+/**
+ * FR-028 — what you used recently is what you are most likely to use now. Applied
+ * after `searchExercises`, so filtering and ordering stay separable.
+ */
+export function sortExercisesByRecency(
+  exercises: readonly Exercise[],
+  sets: readonly SetEntry[],
+): Exercise[] {
+  const lastAt = new Map(
+    exercises.map((exercise) => [exercise.id, lastRecordedSet(sets, exercise.id)?.loggedAt]),
+  )
+
+  return [...exercises].sort((a, b) => {
+    const left = lastAt.get(a.id)
+    const right = lastAt.get(b.id)
+
+    if (left !== undefined && right !== undefined) return right.localeCompare(left)
+    // Recorded exercises lead; among the rest the newest addition does, because
+    // an exercise just added is about to be used.
+    if (left !== undefined) return -1
+    if (right !== undefined) return 1
+
+    return b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)
+  })
+}
+
 /** FR-002 — substring match on the name, case- and whitespace-insensitive. */
 export function searchExercises(exercises: readonly Exercise[], query: string): Exercise[] {
   const needle = normalizeExerciseName(query)

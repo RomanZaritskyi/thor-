@@ -37,7 +37,7 @@ export function SetList({
             <Button
               variant="ghost"
               size="icon"
-              className="ml-auto"
+              className="ml-auto size-11"
               aria-label={ui.set.delete(entry.weightKg, entry.reps)}
               onClick={() => {
                 onDelete(entry)

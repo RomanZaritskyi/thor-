@@ -296,6 +296,36 @@ describe('<ExerciseScreen />', () => {
     })
   })
 
+  it('adjusts weight and reps in steps, without typing (FR-027)', async () => {
+    const { user } = render({ blocks: [block()], sets: [set({ weightKg: 80, reps: 10 })] })
+
+    await user.click(await screen.findByRole('button', { name: 'Більше на 2.5 кг' }))
+    expect(screen.getByLabelText('Вага, кг')).toHaveValue(82.5)
+
+    await user.click(screen.getByRole('button', { name: 'Менше на 2.5 кг' }))
+    expect(screen.getByLabelText('Вага, кг')).toHaveValue(80)
+
+    await user.click(screen.getByRole('button', { name: 'На один повтор більше' }))
+    expect(screen.getByLabelText('Повтори')).toHaveValue(11)
+  })
+
+  it('records the stepped value (FR-027)', async () => {
+    const { user } = render({ blocks: [block()], sets: [set({ weightKg: 80, reps: 10 })] })
+
+    await user.click(await screen.findByRole('button', { name: 'Більше на 2.5 кг' }))
+    await user.click(screen.getByRole('button', { name: 'Записати підхід' }))
+
+    expect(await screen.findByRole('region', { name: 'Цей раз' })).toHaveTextContent('82.5 × 10')
+  })
+
+  it('offers no downward step at the minimum (FR-027)', async () => {
+    render()
+
+    // Empty fields read as the minimum, so there is nothing to step down to.
+    expect(await screen.findByRole('button', { name: 'Менше на 2.5 кг' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'На один повтор менше' })).toBeDisabled()
+  })
+
   it('explains an exercise that does not exist, and offers the way back (FR-023)', async () => {
     const repository = createTestRepository({ exercises: [], blocks: [], sets: [] })
     renderWorkout(<ExerciseScreen exerciseId={uuid('zz')} />, { repository })

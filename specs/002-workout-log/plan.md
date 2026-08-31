@@ -90,34 +90,37 @@ the workout provider so `src/test/` stays feature-agnostic.
 
 ## Requirement → design map
 
-| FR     | Where it lives                                                  | How it is proven                                                                                  |
-| ------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| FR-001 | `routes/index.tsx`                                              | e2e: a cold open lands on the picker                                                              |
-| FR-002 | `model.ts::searchExercises`                                     | unit tests for case, whitespace, substring, no match                                              |
-| FR-003 | `model.ts::previousBlock`                                       | unit tests; component test on the exercise screen                                                 |
-| FR-004 | `components/exercise-screen`                                    | component test for the no-history message                                                         |
-| FR-005 | `repository.ts::recordSet` + `components/record-set-form`       | component test: recording shows it in today's list                                                |
-| FR-006 | `model.ts::groupSetsByDate` ordering by `loggedAt`              | unit test: identical sets are kept, in order                                                      |
-| FR-007 | `model.ts::setDraftSchema`                                      | unit tests for 0 reps, negative weight, 2.5, 0                                                    |
-| FR-008 | `repository.ts::addExercise` + picker                           | component test: added and immediately findable                                                    |
-| FR-009 | `model.ts::normalizeExerciseName` + a unique index              | unit tests for case and whitespace variants                                                       |
-| FR-010 | `store.ts` IndexedDB adapter                                    | store test round-trips through `fake-indexeddb`                                                   |
-| FR-011 | `vite.config.ts` PWA precache                                   | e2e with the context offline from a cold start                                                    |
-| FR-012 | `store.ts` load result + `components/unreadable-data-screen`    | store test: a corrupt row reports unreadable and **no write follows**                             |
-| FR-013 | `repository.ts` accepts an id, never a name                     | unit test: recording against an unknown id rejects                                                |
-| FR-014 | `model.ts` note field + `components/set-list`                   | component test: the note shows beside the numbers                                                 |
-| FR-015 | `model.ts::isBlockOpen` + `repository.ts::recordSet`            | unit tests across a local-midnight boundary and a hand-closed block                               |
-| FR-016 | `repository.ts::deleteSet` guarded by date                      | unit tests: today deletable including a closed block, an earlier day is not                       |
-| FR-017 | `transfer.ts::exportData`                                       | unit test on the serialised shape                                                                 |
-| FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`        | unit test: export, record more, import, only the exported data remains                            |
-| FR-019 | `components/transfer-panel`                                     | component tests: the count is named; declining changes nothing                                    |
-| FR-020 | `model.ts::prefillFrom`                                         | unit tests; component test that the fields follow the block in progress                           |
-| FR-021 | `components/exercise-picker` empty states                       | component test distinguishing both states                                                         |
-| FR-022 | `model.ts::exerciseNameSchema` + picker                         | unit test on the schema; component test that nothing is added                                     |
-| FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen`    | e2e on an unknown URL; component test on an unknown exercise                                      |
-| FR-024 | `repository.ts::finishExercise` + the screen                    | repository tests for block boundaries; component and e2e tests for the twice-in-a-day journey     |
-| FR-025 | `repository.ts::renameExercise` + `components/exercise-heading` | repository tests for collisions and history; component and e2e tests that the sets stay           |
-| FR-026 | `repository.ts::removeExercise`                                 | repository test that history blocks it; component test that the control is absent once sets exist |
+| FR     | Where it lives                                                  | How it is proven                                                                                       |
+| ------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| FR-001 | `routes/index.tsx`                                              | e2e: a cold open lands on the picker                                                                   |
+| FR-002 | `model.ts::searchExercises`                                     | unit tests for case, whitespace, substring, no match                                                   |
+| FR-003 | `model.ts::previousBlock`                                       | unit tests; component test on the exercise screen                                                      |
+| FR-004 | `components/exercise-screen`                                    | component test for the no-history message                                                              |
+| FR-005 | `repository.ts::recordSet` + `components/record-set-form`       | component test: recording shows it in today's list                                                     |
+| FR-006 | `model.ts::groupSetsByDate` ordering by `loggedAt`              | unit test: identical sets are kept, in order                                                           |
+| FR-007 | `model.ts::setDraftSchema`                                      | unit tests for 0 reps, negative weight, 2.5, 0                                                         |
+| FR-008 | `repository.ts::addExercise` + picker                           | component test: added and immediately findable                                                         |
+| FR-009 | `model.ts::normalizeExerciseName` + a unique index              | unit tests for case and whitespace variants                                                            |
+| FR-010 | `store.ts` IndexedDB adapter                                    | store test round-trips through `fake-indexeddb`                                                        |
+| FR-011 | `vite.config.ts` PWA precache                                   | e2e with the context offline from a cold start                                                         |
+| FR-012 | `store.ts` load result + `components/unreadable-data-screen`    | store test: a corrupt row reports unreadable and **no write follows**                                  |
+| FR-013 | `repository.ts` accepts an id, never a name                     | unit test: recording against an unknown id rejects                                                     |
+| FR-014 | `model.ts` note field + `components/set-list`                   | component test: the note shows beside the numbers                                                      |
+| FR-015 | `model.ts::isBlockOpen` + `repository.ts::recordSet`            | unit tests across a local-midnight boundary and a hand-closed block                                    |
+| FR-016 | `repository.ts::deleteSet` guarded by date                      | unit tests: today deletable including a closed block, an earlier day is not                            |
+| FR-017 | `transfer.ts::exportData`                                       | unit test on the serialised shape                                                                      |
+| FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`        | unit test: export, record more, import, only the exported data remains                                 |
+| FR-019 | `components/transfer-panel`                                     | component tests: the count is named; declining changes nothing                                         |
+| FR-020 | `model.ts::prefillFrom`                                         | unit tests; component test that the fields follow the block in progress                                |
+| FR-021 | `components/exercise-picker` empty states                       | component test distinguishing both states                                                              |
+| FR-022 | `model.ts::exerciseNameSchema` + picker                         | unit test on the schema; component test that nothing is added                                          |
+| FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen`    | e2e on an unknown URL; component test on an unknown exercise                                           |
+| FR-024 | `repository.ts::finishExercise` + the screen                    | repository tests for block boundaries; component and e2e tests for the twice-in-a-day journey          |
+| FR-025 | `repository.ts::renameExercise` + `components/exercise-heading` | repository tests for collisions and history; component and e2e tests that the sets stay                |
+| FR-026 | `repository.ts::removeExercise`                                 | repository test that history blocks it; component test that the control is absent once sets exist      |
+| FR-027 | `model.ts::stepValue` + `components/record-set-form`            | unit tests for clamping, empty fields and float dust; component and e2e tests recording without typing |
+| FR-028 | `model.ts::sortExercisesByRecency`                              | unit tests over recorded, older and never-recorded exercises; component test on render order           |
+| FR-029 | `model.ts::lastRecordedSet` + `daysBetween`                     | unit tests; component test that the label is present and absent in the right cases                     |
 
 ## Blocks (amendment)
 
@@ -150,6 +153,31 @@ beats, and the honest answer was "nothing".
 So the upgrade discards what it can no longer read and keeps the exercises, whose
 shape never changed. It is one line, it destroys data, and it is tested for
 exactly that reason.
+
+## Thumb-first (amendment)
+
+The screens were built screen-first. Three things made the app slower than the
+notes app it replaced, at the moment it is actually used — standing at a machine,
+one hand free.
+
+The exercise list was in **creation order**, so at twenty-five exercises the one
+used yesterday sat in the middle. It is now ordered by when each was last recorded
+(FR-028), with never-recorded ones after, newest addition first — an exercise just
+added is about to be used. Each row says when it last happened (FR-029), so work
+already done today is visible without opening anything.
+
+Changing 80 → 82.5 meant tapping a field, waiting for the keyboard, selecting and
+retyping. It is now one tap either side of the number (FR-027). The arithmetic
+lives in `stepValue` rather than the component, because the awkward parts — an
+empty field, a value that is not a number, floating-point dust from fractional
+steps — are exactly what wants a unit test.
+
+Two fixes were not new requirements but unmet ones: the non-functional constraints
+already said precision tapping is a failure mode, and icon buttons were 36px. They
+are 44px now, applied as a `className` at the call sites rather than by editing
+`src/components/ui/button.tsx`, because that file is vendored and regenerated. And
+_Закінчити вправу_ moved above the set list, so reaching it no longer depends on
+how many sets are in it.
 
 ## Complexity budget
 

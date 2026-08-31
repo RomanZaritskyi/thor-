@@ -129,6 +129,38 @@ test("deletes one of today's sets (FR-016)", async ({ page }) => {
   await expect(page.getByText('Ще жодного підходу — запишіть перший.')).toBeVisible()
 })
 
+test('records a set using only the steppers, typing nothing (FR-027)', async ({ page }) => {
+  await addExercise(page, 'Жим ногами')
+  await page.getByRole('link', { name: 'Жим ногами' }).click()
+
+  // From an empty form: three steps of 2.5 kg, ten of one rep. No keyboard.
+  for (let i = 0; i < 3; i += 1) {
+    await page.getByRole('button', { name: 'Більше на 2.5 кг' }).click()
+  }
+  for (let i = 0; i < 10; i += 1) {
+    await page.getByRole('button', { name: 'На один повтор більше' }).click()
+  }
+  await page.getByRole('button', { name: 'Записати підхід' }).click()
+
+  await expect(page.getByTestId('set-summary')).toHaveText(['5 × 10'])
+})
+
+test('orders the list by what was used most recently (FR-028, FR-029)', async ({ page }) => {
+  await addExercise(page, 'Присід')
+  await addExercise(page, 'Жим ногами')
+
+  // Record against the one added first, so recency and creation order disagree.
+  await page.getByRole('link', { name: 'Присід' }).click()
+  await recordSet(page, '100', '5')
+  await page.getByRole('link', { name: 'До списку вправ' }).click()
+
+  await expect(page.getByRole('link', { name: /Присід/ })).toBeVisible()
+  const names = await page.getByRole('link').allTextContents()
+  const exercises = names.filter((name) => /Присід|Жим ногами/.test(name))
+  expect(exercises[0]).toContain('Присід')
+  await expect(page.getByTestId('exercise-when')).toHaveText(['сьогодні'])
+})
+
 test('renames an exercise and keeps its history (FR-025)', async ({ page }) => {
   await addExercise(page, 'Жим ногама')
   await page.getByRole('link', { name: 'Жим ногама' }).click()

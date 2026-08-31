@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
 
-import { normalizeExerciseName, type Exercise } from '../model'
+import { normalizeExerciseName, type Exercise, type SetEntry } from '../model'
 import { createTestRepository, renderWorkout } from '../test-utils'
 import { ExercisePicker } from './exercise-picker'
 
@@ -23,6 +23,58 @@ function Harness() {
 
   return <ExercisePicker query={query} onQueryChange={setQuery} />
 }
+
+function set(exerciseId: string, date: string, loggedAt: string): SetEntry {
+  return {
+    id: `00000000-0000-4000-9000-${loggedAt.slice(-9, -5).replace(/\D/g, '0')}00000000`.slice(
+      0,
+      36,
+    ),
+    exerciseId,
+    blockId: '99999999-9999-4999-8999-999999999991',
+    date,
+    loggedAt,
+    weightKg: 60,
+    reps: 10,
+  }
+}
+
+describe('<ExercisePicker /> ordering (FR-028, FR-029)', () => {
+  const squat = exercise('Присід', '33333333-3333-4333-8333-333333333333')
+
+  it('puts the most recently recorded exercise first', async () => {
+    const repository = createTestRepository({
+      exercises: [legPress, pulldown, squat],
+      blocks: [],
+      sets: [
+        set(legPress.id, '2026-02-20', '2026-02-20T10:00:00.000Z'),
+        set(pulldown.id, '2026-03-01', '2026-03-01T10:00:00.000Z'),
+      ],
+    })
+    renderWorkout(<Harness />, { repository })
+
+    await screen.findByRole('link', { name: /Тяга/ })
+
+    // Recorded today, recorded last week, never recorded.
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      expect.stringContaining('Тяга верхнього блоку'),
+      expect.stringContaining('Жим ногами'),
+      expect.stringContaining('Присід'),
+    ])
+  })
+
+  it('says when each exercise was last recorded, and nothing for one never done', async () => {
+    const repository = createTestRepository({
+      exercises: [legPress, squat],
+      blocks: [],
+      sets: [set(legPress.id, '2026-03-01', '2026-03-01T10:00:00.000Z')],
+    })
+    renderWorkout(<Harness />, { repository })
+
+    expect(await screen.findByTestId('exercise-when')).toHaveTextContent('сьогодні')
+    expect(screen.getAllByTestId('exercise-when')).toHaveLength(1)
+  })
+})
 
 describe('<ExercisePicker />', () => {
   it('lists every exercise (FR-001)', async () => {

@@ -1,10 +1,11 @@
+import { Minus, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-import { setDraftSchema, type SetDraft } from '../model'
+import { setDraftSchema, stepValue, type SetDraft } from '../model'
 import { ui } from '../strings'
 
 export interface Prefill {
@@ -17,6 +18,35 @@ export interface Prefill {
  * prefilled (FR-020), which makes them controlled anyway, and `register()` is
  * incompatible with the React Compiler (see CLAUDE.md).
  */
+const WEIGHT_STEP = 2.5
+const REPS_STEP = 1
+
+/** FR-027 — a 44px target either side of the number, so no typing is needed. */
+function Stepper({
+  label,
+  disabled,
+  onPress,
+  children,
+}: {
+  label: string
+  disabled: boolean
+  onPress: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="size-11 shrink-0"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onPress}
+    >
+      {children}
+    </Button>
+  )
+}
+
 export function RecordSetForm({
   prefill,
   isSubmitting = false,
@@ -65,39 +95,79 @@ export function RecordSetForm({
         submit()
       }}
     >
-      <div className="flex gap-3">
-        <div className="flex-1 space-y-2">
+      <div className="space-y-3">
+        <div className="space-y-2">
           <Label htmlFor="set-weight">{ui.record.weightLabel}</Label>
-          <Input
-            id="set-weight"
-            type="number"
-            inputMode="decimal"
-            step="0.5"
-            min="0"
-            className="h-12 text-lg"
-            aria-invalid={invalid}
-            value={weight}
-            onChange={(event) => {
-              setWeight(event.target.value)
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <Stepper
+              label={ui.record.weightDown}
+              disabled={Number(weight) <= 0}
+              onPress={() => {
+                setWeight(stepValue(weight, -WEIGHT_STEP, 0))
+              }}
+            >
+              <Minus />
+            </Stepper>
+            <Input
+              id="set-weight"
+              type="number"
+              inputMode="decimal"
+              step={WEIGHT_STEP}
+              min="0"
+              className="h-11 text-center text-lg"
+              aria-invalid={invalid}
+              value={weight}
+              onChange={(event) => {
+                setWeight(event.target.value)
+              }}
+            />
+            <Stepper
+              label={ui.record.weightUp}
+              disabled={false}
+              onPress={() => {
+                setWeight(stepValue(weight, WEIGHT_STEP, 0))
+              }}
+            >
+              <Plus />
+            </Stepper>
+          </div>
         </div>
 
-        <div className="flex-1 space-y-2">
+        <div className="space-y-2">
           <Label htmlFor="set-reps">{ui.record.repsLabel}</Label>
-          <Input
-            id="set-reps"
-            type="number"
-            inputMode="numeric"
-            step="1"
-            min="1"
-            className="h-12 text-lg"
-            aria-invalid={invalid}
-            value={reps}
-            onChange={(event) => {
-              setReps(event.target.value)
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <Stepper
+              label={ui.record.repsDown}
+              disabled={Number(reps) <= 1}
+              onPress={() => {
+                setReps(stepValue(reps, -REPS_STEP, 1))
+              }}
+            >
+              <Minus />
+            </Stepper>
+            <Input
+              id="set-reps"
+              type="number"
+              inputMode="numeric"
+              step={REPS_STEP}
+              min="1"
+              className="h-11 text-center text-lg"
+              aria-invalid={invalid}
+              value={reps}
+              onChange={(event) => {
+                setReps(event.target.value)
+              }}
+            />
+            <Stepper
+              label={ui.record.repsUp}
+              disabled={false}
+              onPress={() => {
+                setReps(stepValue(reps, REPS_STEP, 1))
+              }}
+            >
+              <Plus />
+            </Stepper>
+          </div>
         </div>
       </div>
 

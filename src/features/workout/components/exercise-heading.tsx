@@ -36,6 +36,7 @@ export function ExerciseHeading({
         <Button
           variant="ghost"
           size="icon"
+          className="size-11"
           aria-label={ui.exercise.rename}
           onClick={() => {
             setError(null)
@@ -49,6 +50,7 @@ export function ExerciseHeading({
           <Button
             variant="ghost"
             size="icon"
+            className="size-11"
             aria-label={ui.exercise.remove}
             disabled={remove.isPending}
             onClick={() => {

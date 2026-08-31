@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   currentBlock,
+  daysBetween,
+  lastRecordedSet,
+  sortExercisesByRecency,
+  stepValue,
   exerciseNameSchema,
   isBlockOpen,
   normalizeExerciseName,
@@ -61,6 +65,101 @@ describe('normalizeExerciseName (FR-009)', () => {
 
   it('makes case and spacing variants collide', () => {
     expect(normalizeExerciseName('ЖИМ  ногами')).toBe(normalizeExerciseName(' жим ногами '))
+  })
+})
+
+describe('stepValue (FR-027)', () => {
+  it('steps weight up by 2.5, keeping the fraction exact', () => {
+    expect(stepValue('80', 2.5, 0)).toBe('82.5')
+    expect(stepValue('82.5', 2.5, 0)).toBe('85')
+  })
+
+  it('steps weight down and clamps at zero — bodyweight is the floor', () => {
+    expect(stepValue('2.5', -2.5, 0)).toBe('0')
+    expect(stepValue('0', -2.5, 0)).toBe('0')
+  })
+
+  it('steps reps by one and clamps at one', () => {
+    expect(stepValue('10', 1, 1)).toBe('11')
+    expect(stepValue('1', -1, 1)).toBe('1')
+  })
+
+  it('starts an empty field at its minimum, so the first press is always valid', () => {
+    expect(stepValue('', 1, 1)).toBe('1')
+    expect(stepValue('', 2.5, 0)).toBe('0')
+    expect(stepValue('   ', -1, 1)).toBe('1')
+  })
+
+  it('recovers from a field that is not a number', () => {
+    expect(stepValue('abc', 2.5, 0)).toBe('0')
+  })
+
+  it('does not accumulate floating-point dust', () => {
+    // 0.1 + 0.2 is the classic; results are rounded to one decimal.
+    expect(stepValue('0.1', 0.2, 0)).toBe('0.3')
+  })
+})
+
+describe('lastRecordedSet and sortExercisesByRecency (FR-028, FR-029)', () => {
+  const older: Exercise = {
+    id: 'older',
+    name: 'Присід',
+    normalizedName: 'присід',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  }
+  const recent: Exercise = {
+    id: 'recent',
+    name: 'Жим ногами',
+    normalizedName: 'жим ногами',
+    createdAt: '2026-01-02T00:00:00.000Z',
+  }
+  const untouched: Exercise = {
+    id: 'untouched',
+    name: 'Станова',
+    normalizedName: 'станова',
+    createdAt: '2026-01-03T00:00:00.000Z',
+  }
+  const sets = [
+    set({ id: 'a', exerciseId: 'older', date: '2026-02-20', loggedAt: '2026-02-20T10:00:00.000Z' }),
+    set({ id: 'b', exerciseId: 'recent', date: TODAY, loggedAt: '2026-03-01T10:00:00.000Z' }),
+  ]
+
+  it('finds the most recent set of an exercise', () => {
+    expect(lastRecordedSet(sets, 'recent')?.id).toBe('b')
+    expect(lastRecordedSet(sets, 'untouched')).toBeUndefined()
+  })
+
+  it('puts the most recently recorded exercise first', () => {
+    expect(sortExercisesByRecency([older, recent], sets).map((e) => e.id)).toEqual([
+      'recent',
+      'older',
+    ])
+  })
+
+  it('puts never-recorded exercises after recorded ones, newest addition first', () => {
+    // An exercise just added is about to be used, so it leads its group.
+    const alsoNew: Exercise = { ...untouched, id: 'newer', createdAt: '2026-01-04T00:00:00.000Z' }
+
+    expect(
+      sortExercisesByRecency([untouched, older, alsoNew, recent], sets).map((e) => e.id),
+    ).toEqual(['recent', 'older', 'newer', 'untouched'])
+  })
+
+  it('does not mutate its input', () => {
+    const input = [older, recent]
+    const snapshot = [...input]
+
+    sortExercisesByRecency(input, sets)
+
+    expect(input).toEqual(snapshot)
+  })
+})
+
+describe('daysBetween', () => {
+  it('counts calendar days regardless of time of day', () => {
+    expect(daysBetween('2026-03-01', '2026-03-01')).toBe(0)
+    expect(daysBetween('2026-02-28', '2026-03-01')).toBe(1)
+    expect(daysBetween('2026-02-20', '2026-03-01')).toBe(9)
   })
 })
 

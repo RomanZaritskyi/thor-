@@ -114,6 +114,15 @@ requirement and no code behind it.
 - [x] T134 — `components/exercise-heading.tsx`, wired into the screen · FR: FR-025, FR-026
 - [x] T135 — Playwright: rename an exercise with history and confirm the sets follow · FR: FR-025, FR-026
 
+## Thumb-first
+
+- [x] T140 — Failing unit tests for `stepValue`, `lastRecordedSet`, `sortExercisesByRecency`, `daysBetween` · FR: FR-027, FR-028, FR-029
+- [x] T141 [P] — Failing component tests: render order, the last-recorded label, stepping and recording a stepped value, no downward step at the minimum · FR: FR-027, FR-028, FR-029
+- [x] T142 — The four pure rules in `model.ts` · FR: FR-027, FR-028, FR-029
+- [x] T143 — Steppers in `record-set-form.tsx`; ordering and the label in `exercise-picker.tsx` · FR: FR-027, FR-028, FR-029
+- [x] T144 — 44px icon buttons at the call sites; _Закінчити вправу_ above the set list · FR: —
+- [x] T145 — Playwright: record a set using only the steppers; the list ordered by recency · FR: FR-027, FR-028, FR-029
+
 ## Verification
 
 - [x] T080 — `pnpm verify` green · FR: —

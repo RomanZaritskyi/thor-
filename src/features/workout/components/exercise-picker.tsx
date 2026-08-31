@@ -5,8 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-import { exerciseNameSchema, searchExercises } from '../model'
+import {
+  daysBetween,
+  exerciseNameSchema,
+  lastRecordedSet,
+  searchExercises,
+  sortExercisesByRecency,
+} from '../model'
 import { useAddExercise, useWorkoutData } from '../queries'
+import { useWorkoutRepository } from '../repository-context'
 import { ui } from '../strings'
 
 export function ExercisePicker({
@@ -21,9 +28,12 @@ export function ExercisePicker({
   const [draftName, setDraftName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const today = useWorkoutRepository().today()
   const exercises = workout.data?.data.exercises ?? []
+  const sets = workout.data?.data.sets ?? []
   // No useMemo: the React Compiler memoises this (see vite.config.ts).
-  const visible = searchExercises(exercises, query)
+  // FR-028: filter first, then order — the two rules stay separable.
+  const visible = sortExercisesByRecency(searchExercises(exercises, query), sets)
 
   function submit() {
     const parsed = exerciseNameSchema.safeParse(draftName)
@@ -70,17 +80,27 @@ export function ExercisePicker({
         </p>
       ) : (
         <ul className="space-y-2">
-          {visible.map((exercise) => (
-            <li key={exercise.id}>
-              <Link
-                to="/exercise/$exerciseId"
-                params={{ exerciseId: exercise.id }}
-                className="flex min-h-12 items-center rounded-lg border px-4 py-3 text-base transition-colors hover:bg-accent hover:text-accent-foreground"
-              >
-                {exercise.name}
-              </Link>
-            </li>
-          ))}
+          {visible.map((exercise) => {
+            const last = lastRecordedSet(sets, exercise.id)
+
+            return (
+              <li key={exercise.id}>
+                <Link
+                  to="/exercise/$exerciseId"
+                  params={{ exerciseId: exercise.id }}
+                  className="flex min-h-14 flex-col justify-center rounded-lg border px-4 py-3 transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <span className="text-base">{exercise.name}</span>
+                  {/* FR-029: what is already done today, without opening it. */}
+                  {last === undefined ? null : (
+                    <span data-testid="exercise-when" className="text-xs text-muted-foreground">
+                      {ui.exercise.daysAgo(daysBetween(last.date, today))}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
 

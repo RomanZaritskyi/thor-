@@ -126,26 +126,26 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
           <p className="text-sm text-muted-foreground">{ui.exercise.noSetsToday}</p>
         ) : (
           <>
+            {/* FR-024. Above the list, so its position does not depend on how
+                many sets are in it. */}
+            <Button
+              variant="secondary"
+              className="h-11 w-full"
+              disabled={finishExercise.isPending}
+              onClick={() => {
+                finishExercise.mutate(exerciseId)
+              }}
+            >
+              {finishExercise.isPending ? ui.exercise.finishing : ui.exercise.finish}
+            </Button>
+            <p className="text-xs text-muted-foreground">{ui.exercise.finishHint}</p>
+
             <SetList
               sets={current.sets}
               onDelete={(entry) => {
                 deleteSet.mutate(entry.id)
               }}
             />
-            {/* FR-024 */}
-            <div className="space-y-2 border-t pt-3">
-              <Button
-                variant="secondary"
-                className="w-full"
-                disabled={finishExercise.isPending}
-                onClick={() => {
-                  finishExercise.mutate(exerciseId)
-                }}
-              >
-                {finishExercise.isPending ? ui.exercise.finishing : ui.exercise.finish}
-              </Button>
-              <p className="text-xs text-muted-foreground">{ui.exercise.finishHint}</p>
-            </div>
           </>
         )}
       </section>
