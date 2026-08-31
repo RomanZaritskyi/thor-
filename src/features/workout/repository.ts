@@ -38,6 +38,13 @@ export class UnknownExerciseError extends Error {
   }
 }
 
+export class ExerciseHasHistoryError extends Error {
+  constructor(id: string) {
+    super(`Вправа ${id} має записані підходи — її можна перейменувати, але не видалити`)
+    this.name = 'ExerciseHasHistoryError'
+  }
+}
+
 export class ImmutablePastError extends Error {
   constructor(date: string) {
     super(`Підхід за ${date} не можна змінити — редагується лише сьогоднішній день`)
@@ -55,6 +62,13 @@ export interface WorkoutRepository {
   today(): string
   load(): Promise<LoadResult>
   addExercise(name: string): Promise<Exercise>
+  /**
+   * FR-025 — the history follows, because sets and blocks key on the exercise's
+   * identity rather than on what it is called.
+   */
+  renameExercise(id: string, name: string): Promise<Exercise>
+  /** FR-026 — only while nothing is recorded against it. */
+  removeExercise(id: string): Promise<void>
   recordSet(exerciseId: string, draft: unknown): Promise<SetEntry>
   /**
    * FR-024 — closes the exercise's open block, so the next set starts a fresh
@@ -117,6 +131,47 @@ export function createWorkoutRepository({
       await store.addExercise(exercise)
 
       return exercise
+    },
+
+    renameExercise: async (id, rawName) => {
+      const data = await readable()
+      const exercise = data.exercises.find((candidate) => candidate.id === id)
+
+      if (exercise === undefined) throw new UnknownExerciseError(id)
+
+      const name = exerciseNameSchema.parse(rawName)
+      const normalizedName = normalizeExerciseName(name)
+
+      // Checked here rather than left to the unique index, which would surface a
+      // collision as an opaque constraint error instead of a message that says
+      // which name is taken. Colliding with itself is just a re-casing.
+      const taken = data.exercises.some(
+        (candidate) => candidate.id !== id && candidate.normalizedName === normalizedName,
+      )
+
+      if (taken) throw new DuplicateExerciseError(name)
+
+      const renamed: Exercise = { ...exercise, name, normalizedName }
+
+      await store.updateExercise(renamed)
+
+      return renamed
+    },
+
+    removeExercise: async (id) => {
+      const data = await readable()
+
+      if (!data.exercises.some((exercise) => exercise.id === id)) {
+        throw new UnknownExerciseError(id)
+      }
+
+      // The guard lives here, not in the component, so no future caller can go
+      // round it and delete a training record.
+      if (data.sets.some((entry) => entry.exerciseId === id)) {
+        throw new ExerciseHasHistoryError(id)
+      }
+
+      await store.deleteExercise(id)
     },
 
     recordSet: async (exerciseId, rawDraft) => {

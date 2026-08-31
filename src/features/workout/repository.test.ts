@@ -4,6 +4,7 @@ import { normalizeExerciseName, type Exercise } from './model'
 import {
   createWorkoutRepository,
   DuplicateExerciseError,
+  ExerciseHasHistoryError,
   ImmutablePastError,
   UnknownExerciseError,
   UnreadableStoreError,
@@ -71,6 +72,130 @@ describe('today (FR-015)', () => {
 
     expect(day).toBe('2026-03-01')
     expect(entry.date).toBe(day)
+  })
+})
+
+describe('renaming an exercise (FR-025)', () => {
+  it('changes the name and the key two spellings collide on', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+
+    const renamed = await repository.renameExercise(legPress.id, '  Жим Ногами Сидячи  ')
+
+    expect(renamed.name).toBe('Жим Ногами Сидячи')
+    expect(renamed.normalizedName).toBe('жим ногами сидячи')
+    expect((await repository.load()).data.exercises).toEqual([renamed])
+  })
+
+  it('keeps the history, because sets belong to the exercise and not its spelling', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+    const entry = await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+
+    await repository.renameExercise(legPress.id, 'Жим ногами вузько')
+
+    const { data } = await repository.load()
+    expect(data.sets.map((set) => set.id)).toEqual([entry.id])
+    expect(data.sets[0]?.exerciseId).toBe(legPress.id)
+  })
+
+  it('refuses a name another exercise already holds (FR-009)', async () => {
+    const squat = {
+      id: '55555555-5555-4555-8555-555555555555',
+      name: 'Присід',
+      normalizedName: normalizeExerciseName('Присід'),
+      createdAt: '2026-01-01T00:00:00.000Z',
+    }
+    const repository = build({ exercises: [legPress, squat], blocks: [], sets: [] })
+
+    await expect(repository.renameExercise(legPress.id, ' присід ')).rejects.toThrow(
+      DuplicateExerciseError,
+    )
+    expect((await repository.load()).data.exercises[0]?.name).toBe('Жим ногами')
+  })
+
+  it('allows re-casing its own name, which collides only with itself', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+
+    expect((await repository.renameExercise(legPress.id, 'ЖИМ НОГАМИ')).name).toBe('ЖИМ НОГАМИ')
+  })
+
+  it('refuses a blank name (FR-022)', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+
+    await expect(repository.renameExercise(legPress.id, '   ')).rejects.toThrow()
+  })
+
+  it('refuses an exercise that does not exist', async () => {
+    const repository = build({ exercises: [], blocks: [], sets: [] })
+
+    await expect(repository.renameExercise(legPress.id, 'Будь-що')).rejects.toThrow(
+      UnknownExerciseError,
+    )
+  })
+})
+
+describe('removing an exercise (FR-026)', () => {
+  it('removes one that has nothing recorded against it', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+
+    await repository.removeExercise(legPress.id)
+
+    expect((await repository.load()).data.exercises).toEqual([])
+  })
+
+  it('refuses to remove one with history, and touches nothing', async () => {
+    // Nothing in this app deletes a training record; renaming is the way out.
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+    await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+
+    await expect(repository.removeExercise(legPress.id)).rejects.toThrow(ExerciseHasHistoryError)
+
+    const { data } = await repository.load()
+    expect(data.exercises).toEqual([legPress])
+    expect(data.sets).toHaveLength(1)
+  })
+
+  it('removes the empty block left by a set that was deleted again', async () => {
+    const repository = build({ exercises: [legPress], blocks: [], sets: [] })
+    const entry = await repository.recordSet(legPress.id, { weightKg: 60, reps: 10 })
+    await repository.deleteSet(entry.id)
+
+    await repository.removeExercise(legPress.id)
+
+    const { data } = await repository.load()
+    expect(data.exercises).toEqual([])
+    expect(data.blocks).toEqual([])
+  })
+})
+
+describe('renaming and removing refuse an unreadable store (FR-012)', () => {
+  function unreadableStore() {
+    const store = createMemoryStore(
+      { exercises: [legPress], blocks: [], sets: [] },
+      { unreadable: 'зіпсовано' },
+    )
+
+    return {
+      store,
+      repository: build({ exercises: [], blocks: [], sets: [] }, store),
+      updateExercise: vi.spyOn(store, 'updateExercise'),
+      deleteExercise: vi.spyOn(store, 'deleteExercise'),
+    }
+  }
+
+  it('does not rename, and does not touch the store', async () => {
+    const { repository, updateExercise } = unreadableStore()
+
+    await expect(repository.renameExercise(legPress.id, 'Інша')).rejects.toThrow(
+      UnreadableStoreError,
+    )
+    expect(updateExercise).not.toHaveBeenCalled()
+  })
+
+  it('does not remove, and does not touch the store', async () => {
+    const { repository, deleteExercise } = unreadableStore()
+
+    await expect(repository.removeExercise(legPress.id)).rejects.toThrow(UnreadableStoreError)
+    expect(deleteExercise).not.toHaveBeenCalled()
   })
 })
 

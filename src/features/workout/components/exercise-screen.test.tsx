@@ -1,5 +1,5 @@
 import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { normalizeExerciseName, type Block, type Exercise, type SetEntry } from '../model'
 import { createTestRepository, renderWorkout } from '../test-utils'
@@ -230,6 +230,70 @@ describe('<ExerciseScreen />', () => {
     await screen.findByRole('region', { name: 'Минулого разу' })
 
     expect(screen.queryByRole('button', { name: /Видалити підхід/ })).not.toBeInTheDocument()
+  })
+
+  it('renames the exercise, and the history stays with it (FR-025)', async () => {
+    const { user } = render({ blocks: [block()], sets: [set({ weightKg: 55, reps: 12 })] })
+
+    await user.click(await screen.findByRole('button', { name: 'Перейменувати' }))
+    const field = screen.getByLabelText('Нова назва вправи')
+    await user.clear(field)
+    await user.type(field, 'Жим ногами вузько')
+    await user.click(screen.getByRole('button', { name: 'Зберегти' }))
+
+    expect(await screen.findByRole('heading', { name: 'Жим ногами вузько' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Минулого разу' })).toHaveTextContent('55 × 12')
+  })
+
+  it('reports a name another exercise holds, and keeps the old one (FR-025)', async () => {
+    const squat: Exercise = {
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'Присід',
+      normalizedName: normalizeExerciseName('Присід'),
+      createdAt: '2026-01-01T00:00:00.000Z',
+    }
+    const repository = createTestRepository({ exercises: [legPress, squat], blocks: [], sets: [] })
+    const { user } = renderWorkout(<ExerciseScreen exerciseId={legPress.id} />, { repository })
+
+    await user.click(await screen.findByRole('button', { name: 'Перейменувати' }))
+    const field = screen.getByLabelText('Нова назва вправи')
+    await user.clear(field)
+    await user.type(field, 'присід')
+    await user.click(screen.getByRole('button', { name: 'Зберегти' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/вже існує/)
+    expect((await repository.load()).data.exercises[0]?.name).toBe('Жим ногами')
+  })
+
+  it('abandons a rename on cancel (FR-025)', async () => {
+    const { user } = render()
+
+    await user.click(await screen.findByRole('button', { name: 'Перейменувати' }))
+    await user.type(screen.getByLabelText('Нова назва вправи'), 'зайве')
+    await user.click(screen.getByRole('button', { name: 'Скасувати' }))
+
+    expect(screen.getByRole('heading', { name: 'Жим ногами' })).toBeInTheDocument()
+  })
+
+  it('offers removal only while nothing is recorded (FR-026)', async () => {
+    const { user } = render()
+
+    expect(await screen.findByRole('button', { name: 'Видалити вправу' })).toBeInTheDocument()
+
+    await recordSet(user, '60', '10')
+    await screen.findByText('60 × 10')
+
+    expect(screen.queryByRole('button', { name: 'Видалити вправу' })).not.toBeInTheDocument()
+  })
+
+  it('removes an exercise that has no history (FR-026)', async () => {
+    const { user, repository } = render()
+
+    await user.click(await screen.findByRole('button', { name: 'Видалити вправу' }))
+
+    await vi.waitFor(async () => {
+      expect((await repository.load()).data.exercises).toEqual([])
+    })
   })
 
   it('explains an exercise that does not exist, and offers the way back (FR-023)', async () => {

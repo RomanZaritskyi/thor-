@@ -39,6 +39,26 @@ export function useAddExercise() {
   })
 }
 
+export function useRenameExercise() {
+  const repository = useWorkoutRepository()
+  const invalidate = useInvalidate()
+
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => repository.renameExercise(id, name),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRemoveExercise() {
+  const repository = useWorkoutRepository()
+  const invalidate = useInvalidate()
+
+  return useMutation({
+    mutationFn: (id: string) => repository.removeExercise(id),
+    onSuccess: invalidate,
+  })
+}
+
 export function useRecordSet() {
   const repository = useWorkoutRepository()
   const invalidate = useInvalidate()

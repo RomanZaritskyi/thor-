@@ -67,6 +67,30 @@ describe('IndexedDB store (FR-010)', () => {
     })
   })
 
+  it('updates an exercise in place (FR-025)', async () => {
+    const store = idb()
+    await store.addExercise(exercise)
+
+    await store.updateExercise({ ...exercise, name: 'Інша', normalizedName: 'інша' })
+
+    expect((await idb().load()).data.exercises).toEqual([
+      { ...exercise, name: 'Інша', normalizedName: 'інша' },
+    ])
+  })
+
+  it('deletes an exercise together with any blocks left behind (FR-026)', async () => {
+    const store = idb()
+    await store.addExercise(exercise)
+    await store.addSet(entry(), testBlock)
+    await store.deleteSet(entry().id)
+
+    await store.deleteExercise(exercise.id)
+
+    const { data } = await idb().load()
+    expect(data.exercises).toEqual([])
+    expect(data.blocks).toEqual([])
+  })
+
   it('closes a block, and the closure survives reopening (FR-024)', async () => {
     const store = idb()
     await store.addExercise(exercise)

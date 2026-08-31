@@ -21,6 +21,9 @@ export type LoadResult =
 export interface WorkoutStore {
   load(): Promise<LoadResult>
   addExercise(exercise: WorkoutData['exercises'][number]): Promise<void>
+  updateExercise(exercise: WorkoutData['exercises'][number]): Promise<void>
+  /** Only ever called for an exercise with nothing recorded against it (FR-026). */
+  deleteExercise(id: string): Promise<void>
   /** A set and the block it opens arrive together, or neither does. */
   addSet(
     entry: WorkoutData['sets'][number],
@@ -53,6 +56,15 @@ export function createMemoryStore(
         : { status: 'unreadable', reason: options.unreadable, data: copy() },
     addExercise: async (exercise) => {
       data.exercises.push(exercise)
+    },
+    updateExercise: async (exercise) => {
+      data.exercises = data.exercises.map((candidate) =>
+        candidate.id === exercise.id ? exercise : candidate,
+      )
+    },
+    deleteExercise: async (id) => {
+      data.exercises = data.exercises.filter((exercise) => exercise.id !== id)
+      data.blocks = data.blocks.filter((block) => block.exerciseId !== id)
     },
     addSet: async (entry, openedBlock) => {
       if (openedBlock !== undefined) data.blocks.push(openedBlock)
@@ -154,6 +166,27 @@ export function createIndexedDbStore(name: string = DB_NAME): WorkoutStore {
     addExercise: async (exercise) => {
       const database = await db()
       await database.add(EXERCISES, exercise)
+      database.close()
+    },
+
+    updateExercise: async (exercise) => {
+      const database = await db()
+      await database.put(EXERCISES, exercise)
+      database.close()
+    },
+
+    deleteExercise: async (id) => {
+      const database = await db()
+      const tx = database.transaction([EXERCISES, BLOCKS], 'readwrite')
+
+      // Blocks left empty by deleted sets go with it; sets cannot exist here,
+      // because the repository refuses to remove an exercise that has any.
+      await tx.objectStore(EXERCISES).delete(id)
+      for (const block of await tx.objectStore(BLOCKS).index('exerciseId').getAllKeys(id)) {
+        await tx.objectStore(BLOCKS).delete(block)
+      }
+      await tx.done
+
       database.close()
     },
 

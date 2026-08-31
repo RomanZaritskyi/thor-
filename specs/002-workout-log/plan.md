@@ -66,21 +66,22 @@ entirely, which is a trap worth not re-arming.
 
 ## Modules
 
-| Path                                           | Responsibility                                                                         | New / changed |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------- | ------------- |
-| `src/features/workout/model.ts`                | schemas, normalisation, search, ordering, last session, prefill                        | new           |
-| `src/features/workout/strings.ts`              | every Ukrainian UI string, in one place                                                | new           |
-| `src/features/workout/transfer.ts`             | export serialise, import parse and validate                                            | new           |
-| `src/features/workout/store.ts`                | `WorkoutStore` port, IndexedDB adapter, memory adapter                                 | new           |
-| `src/features/workout/repository.ts`           | CRUD over the port, injected clock and id generator                                    | new           |
-| `src/features/workout/repository-context.ts`   | context + accessor hook                                                                | new           |
-| `src/features/workout/repository-provider.tsx` | provider; exports only a component                                                     | new           |
-| `src/features/workout/queries.ts`              | query keys and TanStack Query hooks                                                    | new           |
-| `src/features/workout/components/*`            | picker, exercise screen, record form, set list, transfer panel, unreadable-data screen | new           |
-| `src/routes/index.tsx`                         | picker route, `?q=` parsing                                                            | changed       |
-| `src/routes/exercise.$exerciseId.tsx`          | exercise route                                                                         | new           |
-| `src/routes/data.tsx`                          | export / import route                                                                  | new           |
-| `vite.config.ts`                               | PWA plugin                                                                             | changed       |
+| Path                                                   | Responsibility                                                                         | New / changed |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- | ------------- |
+| `src/features/workout/model.ts`                        | schemas, normalisation, search, ordering, last session, prefill                        | new           |
+| `src/features/workout/strings.ts`                      | every Ukrainian UI string, in one place                                                | new           |
+| `src/features/workout/transfer.ts`                     | export serialise, import parse and validate                                            | new           |
+| `src/features/workout/store.ts`                        | `WorkoutStore` port, IndexedDB adapter, memory adapter                                 | new           |
+| `src/features/workout/repository.ts`                   | CRUD over the port, injected clock and id generator                                    | new           |
+| `src/features/workout/repository-context.ts`           | context + accessor hook                                                                | new           |
+| `src/features/workout/repository-provider.tsx`         | provider; exports only a component                                                     | new           |
+| `src/features/workout/queries.ts`                      | query keys and TanStack Query hooks                                                    | new           |
+| `src/features/workout/components/exercise-heading.tsx` | rename and remove, where the mistake is noticed                                        | new           |
+| `src/features/workout/components/*`                    | picker, exercise screen, record form, set list, transfer panel, unreadable-data screen | new           |
+| `src/routes/index.tsx`                                 | picker route, `?q=` parsing                                                            | changed       |
+| `src/routes/exercise.$exerciseId.tsx`                  | exercise route                                                                         | new           |
+| `src/routes/data.tsx`                                  | export / import route                                                                  | new           |
+| `vite.config.ts`                                       | PWA plugin                                                                             | changed       |
 
 Reused rather than rebuilt: `cn` (`src/lib/utils.ts`), the shadcn primitives in
 `src/components/ui/`, `createQueryClient` (`src/lib/query-client.ts`), and
@@ -89,32 +90,34 @@ the workout provider so `src/test/` stays feature-agnostic.
 
 ## Requirement → design map
 
-| FR     | Where it lives                                               | How it is proven                                                                              |
-| ------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| FR-001 | `routes/index.tsx`                                           | e2e: a cold open lands on the picker                                                          |
-| FR-002 | `model.ts::searchExercises`                                  | unit tests for case, whitespace, substring, no match                                          |
-| FR-003 | `model.ts::previousBlock`                                    | unit tests; component test on the exercise screen                                             |
-| FR-004 | `components/exercise-screen`                                 | component test for the no-history message                                                     |
-| FR-005 | `repository.ts::recordSet` + `components/record-set-form`    | component test: recording shows it in today's list                                            |
-| FR-006 | `model.ts::groupSetsByDate` ordering by `loggedAt`           | unit test: identical sets are kept, in order                                                  |
-| FR-007 | `model.ts::setDraftSchema`                                   | unit tests for 0 reps, negative weight, 2.5, 0                                                |
-| FR-008 | `repository.ts::addExercise` + picker                        | component test: added and immediately findable                                                |
-| FR-009 | `model.ts::normalizeExerciseName` + a unique index           | unit tests for case and whitespace variants                                                   |
-| FR-010 | `store.ts` IndexedDB adapter                                 | store test round-trips through `fake-indexeddb`                                               |
-| FR-011 | `vite.config.ts` PWA precache                                | e2e with the context offline from a cold start                                                |
-| FR-012 | `store.ts` load result + `components/unreadable-data-screen` | store test: a corrupt row reports unreadable and **no write follows**                         |
-| FR-013 | `repository.ts` accepts an id, never a name                  | unit test: recording against an unknown id rejects                                            |
-| FR-014 | `model.ts` note field + `components/set-list`                | component test: the note shows beside the numbers                                             |
-| FR-015 | `model.ts::isBlockOpen` + `repository.ts::recordSet`         | unit tests across a local-midnight boundary and a hand-closed block                           |
-| FR-016 | `repository.ts::deleteSet` guarded by date                   | unit tests: today deletable including a closed block, an earlier day is not                   |
-| FR-017 | `transfer.ts::exportData`                                    | unit test on the serialised shape                                                             |
-| FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`     | unit test: export, record more, import, only the exported data remains                        |
-| FR-019 | `components/transfer-panel`                                  | component tests: the count is named; declining changes nothing                                |
-| FR-020 | `model.ts::prefillFrom`                                      | unit tests; component test that the fields follow the block in progress                       |
-| FR-021 | `components/exercise-picker` empty states                    | component test distinguishing both states                                                     |
-| FR-022 | `model.ts::exerciseNameSchema` + picker                      | unit test on the schema; component test that nothing is added                                 |
-| FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen` | e2e on an unknown URL; component test on an unknown exercise                                  |
-| FR-024 | `repository.ts::finishExercise` + the screen                 | repository tests for block boundaries; component and e2e tests for the twice-in-a-day journey |
+| FR     | Where it lives                                                  | How it is proven                                                                                  |
+| ------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| FR-001 | `routes/index.tsx`                                              | e2e: a cold open lands on the picker                                                              |
+| FR-002 | `model.ts::searchExercises`                                     | unit tests for case, whitespace, substring, no match                                              |
+| FR-003 | `model.ts::previousBlock`                                       | unit tests; component test on the exercise screen                                                 |
+| FR-004 | `components/exercise-screen`                                    | component test for the no-history message                                                         |
+| FR-005 | `repository.ts::recordSet` + `components/record-set-form`       | component test: recording shows it in today's list                                                |
+| FR-006 | `model.ts::groupSetsByDate` ordering by `loggedAt`              | unit test: identical sets are kept, in order                                                      |
+| FR-007 | `model.ts::setDraftSchema`                                      | unit tests for 0 reps, negative weight, 2.5, 0                                                    |
+| FR-008 | `repository.ts::addExercise` + picker                           | component test: added and immediately findable                                                    |
+| FR-009 | `model.ts::normalizeExerciseName` + a unique index              | unit tests for case and whitespace variants                                                       |
+| FR-010 | `store.ts` IndexedDB adapter                                    | store test round-trips through `fake-indexeddb`                                                   |
+| FR-011 | `vite.config.ts` PWA precache                                   | e2e with the context offline from a cold start                                                    |
+| FR-012 | `store.ts` load result + `components/unreadable-data-screen`    | store test: a corrupt row reports unreadable and **no write follows**                             |
+| FR-013 | `repository.ts` accepts an id, never a name                     | unit test: recording against an unknown id rejects                                                |
+| FR-014 | `model.ts` note field + `components/set-list`                   | component test: the note shows beside the numbers                                                 |
+| FR-015 | `model.ts::isBlockOpen` + `repository.ts::recordSet`            | unit tests across a local-midnight boundary and a hand-closed block                               |
+| FR-016 | `repository.ts::deleteSet` guarded by date                      | unit tests: today deletable including a closed block, an earlier day is not                       |
+| FR-017 | `transfer.ts::exportData`                                       | unit test on the serialised shape                                                                 |
+| FR-018 | `transfer.ts::parseImport` + `repository.ts::replaceAll`        | unit test: export, record more, import, only the exported data remains                            |
+| FR-019 | `components/transfer-panel`                                     | component tests: the count is named; declining changes nothing                                    |
+| FR-020 | `model.ts::prefillFrom`                                         | unit tests; component test that the fields follow the block in progress                           |
+| FR-021 | `components/exercise-picker` empty states                       | component test distinguishing both states                                                         |
+| FR-022 | `model.ts::exerciseNameSchema` + picker                         | unit test on the schema; component test that nothing is added                                     |
+| FR-023 | `routes/__root.tsx` not-found + `components/exercise-screen`    | e2e on an unknown URL; component test on an unknown exercise                                      |
+| FR-024 | `repository.ts::finishExercise` + the screen                    | repository tests for block boundaries; component and e2e tests for the twice-in-a-day journey     |
+| FR-025 | `repository.ts::renameExercise` + `components/exercise-heading` | repository tests for collisions and history; component and e2e tests that the sets stay           |
+| FR-026 | `repository.ts::removeExercise`                                 | repository test that history blocks it; component test that the control is absent once sets exist |
 
 ## Blocks (amendment)
 

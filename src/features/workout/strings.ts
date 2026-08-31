@@ -23,6 +23,12 @@ export const ui = {
     noHistory: 'Цю вправу ще не робили. Це буде перший запис.',
     today: 'Цей раз',
     noSetsToday: 'Ще жодного підходу — запишіть перший.',
+    rename: 'Перейменувати',
+    renameLabel: 'Нова назва вправи',
+    renameSave: 'Зберегти',
+    renameCancel: 'Скасувати',
+    remove: 'Видалити вправу',
+    removeHint: 'Доступно, поки нічого не записано.',
     finish: 'Закінчити вправу',
     finishing: 'Закриваю…',
     finishHint:

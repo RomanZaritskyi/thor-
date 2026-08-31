@@ -129,6 +129,35 @@ test("deletes one of today's sets (FR-016)", async ({ page }) => {
   await expect(page.getByText('Ще жодного підходу — запишіть перший.')).toBeVisible()
 })
 
+test('renames an exercise and keeps its history (FR-025)', async ({ page }) => {
+  await addExercise(page, 'Жим ногама')
+  await page.getByRole('link', { name: 'Жим ногама' }).click()
+  await recordSet(page, '80', '10')
+  await expect(page.getByTestId('set-summary')).toHaveText(['80 × 10'])
+
+  await page.getByRole('button', { name: 'Перейменувати' }).click()
+  await page.getByLabel('Нова назва вправи').fill('Жим ногами')
+  await page.getByRole('button', { name: 'Зберегти' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Жим ногами', level: 1 })).toBeVisible()
+  // The assertion the spec's edge case has been asking for since the first draft.
+  await expect(page.getByTestId('set-summary')).toHaveText(['80 × 10'])
+
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Жим ногами', level: 1 })).toBeVisible()
+  await expect(page.getByTestId('set-summary')).toHaveText(['80 × 10'])
+})
+
+test('removes an exercise added by mistake (FR-026)', async ({ page }) => {
+  await addExercise(page, 'Помилкова')
+  await page.getByRole('link', { name: 'Помилкова' }).click()
+
+  await page.getByRole('button', { name: 'Видалити вправу' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Вправи', level: 1 })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Помилкова' })).toBeHidden()
+})
+
 test('an unknown address explains itself and leads back (FR-023)', async ({ page }) => {
   await page.goto('/does-not-exist')
 

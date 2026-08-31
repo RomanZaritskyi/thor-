@@ -1,6 +1,6 @@
 # Project constitution
 
-**Version 1.1.0 · Ratified 2026-08-30**
+**Version 1.2.0 · Ratified 2026-08-30**
 
 The rules every spec, plan and change in this repository must obey. When a plan
 conflicts with the constitution, the constitution wins — or the constitution gets
@@ -23,16 +23,25 @@ is not a requirement — it is an accident waiting to be "fixed" by the next per
 A feature gets exactly one folder under `specs/`. Before scaffolding a new one,
 ask the only question that matters:
 
-> **Does every requirement in the existing specs stay true after this change?**
+> **Does everything the existing specs assert stay true after this change — and
+> does any of them already claim this behaviour?**
 
-**Yes — new folder.** The change adds behaviour without contradicting anything
-already written. `pnpm spec:new "<name>"` takes the next number.
+**Nothing becomes false and nothing already claims it — new folder.** The change
+adds behaviour the written specs are silent about. `pnpm spec:new "<name>"` takes
+the next number.
 
-**No — edit the spec that is now wrong.** Loosening a limit, dropping something
+**Otherwise, edit the spec in question.** Loosening a limit, dropping something
 from `Out of scope`, changing what a screen does: that is the same feature
 evolving, and it is fixed where it lives, in the same commit as the code and the
 test. A second folder describing the same behaviour differently leaves two
 documents claiming to be the source of truth, and no way to tell which one is.
+
+The second half of the question is the one that is easy to miss. A spec asserts
+things outside its requirements table — in its scenarios, its `Out of scope` list,
+and especially its edge cases. An edge case describing behaviour nobody
+implemented is already a claim on that behaviour, and answering it in a new folder
+splits the feature in two. Ask what the existing spec _talks about_, not only what
+it requires.
 
 A spec therefore describes the **present**, never a history of changes. There is
 no "previously this returned…" in a spec. Git already holds that:

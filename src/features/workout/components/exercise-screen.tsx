@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { currentBlock, prefillFrom, previousBlock } from '../model'
 import { useDeleteSet, useFinishExercise, useRecordSet, useWorkoutData } from '../queries'
 import { useWorkoutRepository } from '../repository-context'
 import { ui } from '../strings'
+import { ExerciseHeading } from './exercise-heading'
 import { RecordSetForm } from './record-set-form'
 import { SetList } from './set-list'
 
@@ -38,6 +39,7 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
   const deleteSet = useDeleteSet()
   const finishExercise = useFinishExercise()
   const today = useWorkoutRepository().today()
+  const navigate = useNavigate()
 
   const data = workout.data?.data
   const exercise = data?.exercises.find((candidate) => candidate.id === exerciseId)
@@ -73,7 +75,13 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
           <ChevronLeft className="size-4" />
           {ui.exercise.back}
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{exercise.name}</h1>
+        <ExerciseHeading
+          exercise={exercise}
+          hasHistory={data.sets.some((entry) => entry.exerciseId === exerciseId)}
+          onRemoved={() => {
+            void navigate({ to: '/' })
+          }}
+        />
       </div>
 
       <section aria-label={ui.exercise.lastTime} className="space-y-2">

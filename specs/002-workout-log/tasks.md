@@ -102,6 +102,18 @@ stored sets. Removed rather than carried.
 - [x] T121 — Replace the reinterpreting upgrade with one that discards unreadable sets and keeps the exercises, and test that it does exactly that · FR: FR-010, FR-012
 - [x] T122 — Correct `plan.md`, which claimed the data was migrated · FR: —
 
+## Fixing a mistyped name
+
+The spec had described renaming as an edge case since its first draft, with no
+requirement and no code behind it.
+
+- [x] T130 — Failing repository tests: rename keeps history, refuses a taken name, allows re-casing; remove refuses an exercise with history; both refuse an unreadable store · FR: FR-012, FR-025, FR-026
+- [x] T131 [P] — Failing store tests for `updateExercise` and `deleteExercise` · FR: FR-025, FR-026
+- [x] T132 [P] — Failing component tests: rename from the heading, duplicate reported, cancel abandons, remove hidden once sets exist · FR: FR-025, FR-026
+- [x] T133 — `renameExercise` and `removeExercise` on the repository, `updateExercise` and `deleteExercise` on the store · FR: FR-025, FR-026
+- [x] T134 — `components/exercise-heading.tsx`, wired into the screen · FR: FR-025, FR-026
+- [x] T135 — Playwright: rename an exercise with history and confirm the sets follow · FR: FR-025, FR-026
+
 ## Verification
 
 - [x] T080 — `pnpm verify` green · FR: —
