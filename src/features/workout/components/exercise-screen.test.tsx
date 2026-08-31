@@ -344,6 +344,23 @@ describe('<ExerciseScreen /> — finishing and deleting', () => {
     expect(await screen.findByText(/ще не робили/i)).toBeInTheDocument()
   })
 
+  it('leads into the whole history of the exercise (FR-032)', async () => {
+    render({ blocks: [block()], sets: [set()] })
+
+    expect(await screen.findByRole('link', { name: /Вся історія/ })).toHaveAttribute(
+      'href',
+      `/history/${legPress.id}`,
+    )
+  })
+
+  it('offers no history link before there is any (FR-032)', async () => {
+    render()
+
+    await screen.findByText(/ще не робили/i)
+
+    expect(screen.queryByRole('link', { name: /Вся історія/ })).not.toBeInTheDocument()
+  })
+
   it('offers no way to change a block from an earlier day (FR-016)', async () => {
     render({ blocks: [block()], sets: [set()] })
 

@@ -5,6 +5,23 @@
 export const ui = {
   appName: 'Thor',
 
+  nav: {
+    label: 'Розділи',
+    exercises: 'Вправи',
+    history: 'Історія',
+    data: 'Дані',
+  },
+
+  history: {
+    title: 'Історія',
+    empty: 'Ще нічого не записано. Історія зʼявиться після першого підходу.',
+    back: 'До історії',
+    /** Selected by `format.ts::formatSessions` — 1 і 2 тренування, але 5 тренувань. */
+    sessions: { few: 'тренування', many: 'тренувань' },
+    /** From the exercise itself, where the decision is actually made. */
+    all: 'Вся історія',
+  },
+
   picker: {
     title: 'Вправи',
     searchLabel: 'Пошук вправи',

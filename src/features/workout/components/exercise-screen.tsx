@@ -1,9 +1,10 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 
+import { formatWhen } from '../format'
 import { currentBlock, nextSet, previousBlock, setRows } from '../model'
 import { useDeleteSet, useFinishExercise, useRecordSet, useWorkoutData } from '../queries'
 import { useWorkoutRepository } from '../repository-context'
@@ -12,28 +13,6 @@ import { ExerciseHeading } from './exercise-heading'
 import { RecordSetForm } from './record-set-form'
 import { SetList } from './set-list'
 import { SetTable } from './set-table'
-
-/**
- * When a block happened, in the terms the decision needs: a run finished an hour
- * ago is "сьогодні, 10:32", one from last week is a date and a distance.
- */
-function formatWhen(date: string, startedAt: string, today: string): string {
-  if (date === today) {
-    return ui.exercise.atTime(
-      new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' }).format(
-        new Date(startedAt),
-      ),
-    )
-  }
-
-  const parsed = new Date(`${date}T00:00:00`)
-  const days = Math.round((new Date(`${today}T00:00:00`).getTime() - parsed.getTime()) / 86_400_000)
-  const formatted = new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long' }).format(
-    parsed,
-  )
-
-  return `${formatted} · ${ui.exercise.daysAgo(days)}`
-}
 
 export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
   const workout = useWorkoutData()
@@ -140,6 +119,17 @@ export function ExerciseScreen({ exerciseId }: { exerciseId: string }) {
             ) : null}
           </div>
         ) : null}
+        {/* FR-032 — the slower question, one tap from the faster one. */}
+        {previous === undefined ? null : (
+          <Link
+            to="/history/$exerciseId"
+            params={{ exerciseId }}
+            className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {ui.history.all}
+            <ChevronRight className="size-4" />
+          </Link>
+        )}
       </section>
 
       <RecordSetForm

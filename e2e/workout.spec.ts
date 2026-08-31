@@ -229,6 +229,68 @@ test('removes an exercise added by mistake (FR-026)', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Помилкова' })).toBeHidden()
 })
 
+test('moves between every section from the bottom bar (FR-033)', async ({ page }) => {
+  const bar = page.getByRole('navigation', { name: 'Розділи' })
+
+  // On the exercise list, the exercises tab is the one lit.
+  await expect(bar.getByRole('link', { name: 'Вправи' })).toHaveAttribute('aria-current', 'page')
+
+  await bar.getByRole('link', { name: 'Історія' }).click()
+  await expect(page.getByRole('heading', { name: 'Історія', level: 1 })).toBeVisible()
+  await expect(bar.getByRole('link', { name: 'Історія' })).toHaveAttribute('aria-current', 'page')
+
+  await bar.getByRole('link', { name: 'Дані' }).click()
+  await expect(page.getByRole('heading', { name: 'Дані', level: 1 })).toBeVisible()
+
+  await bar.getByRole('link', { name: 'Вправи' }).click()
+  await expect(page.getByRole('heading', { name: 'Вправи', level: 1 })).toBeVisible()
+
+  // An open exercise still belongs to the exercises section.
+  await addExercise(page, 'Присід')
+  await page.getByRole('link', { name: 'Присід' }).click()
+  await expect(bar.getByRole('link', { name: 'Вправи' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('reads every session of one exercise (FR-031, FR-032)', async ({ page }) => {
+  await addExercise(page, 'Жим ногами')
+  await page.getByRole('link', { name: 'Жим ногами' }).click()
+
+  // Two runs at the same machine today, so there are two sessions to read.
+  await recordSet(page, '80', '10')
+  await page.getByRole('button', { name: 'Закінчити вправу' }).click()
+  await expect(page.getByTestId('set-previous')).toHaveText(['80 × 10'])
+  await recordSet(page, '85', '8')
+
+  // From the exercise itself: the stall check where the decision is made.
+  await page.getByRole('link', { name: 'Вся історія' }).click()
+  await expect(page.getByRole('heading', { name: /Жим ногами/, level: 1 })).toBeVisible()
+  await expect(page.getByTestId('set-summary')).toHaveText(['85 × 8', '80 × 10'])
+
+  // And from the bar, which says how much history each exercise holds.
+  await page
+    .getByRole('navigation', { name: 'Розділи' })
+    .getByRole('link', { name: 'Історія' })
+    .click()
+  const entry = page.getByRole('link', { name: /Жим ногами/ })
+  await expect(entry).toContainText('2 тренування')
+  await expect(entry).toContainText('сьогодні')
+
+  await entry.click()
+  await expect(page.getByTestId('set-summary')).toHaveText(['85 × 8', '80 × 10'])
+
+  // History is read-only: today's sets are deleted where the run in progress is.
+  await expect(page.getByRole('button', { name: /Видалити підхід/ })).toHaveCount(0)
+})
+
+test('history says so while nothing is recorded (FR-031)', async ({ page }) => {
+  await page
+    .getByRole('navigation', { name: 'Розділи' })
+    .getByRole('link', { name: 'Історія' })
+    .click()
+
+  await expect(page.getByText(/Ще нічого не записано/)).toBeVisible()
+})
+
 test('an unknown address explains itself and leads back (FR-023)', async ({ page }) => {
   await page.goto('/does-not-exist')
 

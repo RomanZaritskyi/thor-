@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DataRouteImport } from './routes/data'
 import { Route as ExerciseExerciseIdRouteImport } from './routes/exercise.$exerciseId'
+import { Route as HistoryIndexRouteImport } from './routes/history.index'
+import { Route as HistoryExerciseIdRouteImport } from './routes/history.$exerciseId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +30,69 @@ const ExerciseExerciseIdRoute = ExerciseExerciseIdRouteImport.update({
   path: '/exercise/$exerciseId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistoryIndexRoute = HistoryIndexRouteImport.update({
+  id: '/history/',
+  path: '/history/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryExerciseIdRoute = HistoryExerciseIdRouteImport.update({
+  id: '/history/$exerciseId',
+  path: '/history/$exerciseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/data': typeof DataRoute
   '/exercise/$exerciseId': typeof ExerciseExerciseIdRoute
+  '/history/$exerciseId': typeof HistoryExerciseIdRoute
+  '/history/': typeof HistoryIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/data': typeof DataRoute
   '/exercise/$exerciseId': typeof ExerciseExerciseIdRoute
+  '/history/$exerciseId': typeof HistoryExerciseIdRoute
+  '/history': typeof HistoryIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/data': typeof DataRoute
   '/exercise/$exerciseId': typeof ExerciseExerciseIdRoute
+  '/history/$exerciseId': typeof HistoryExerciseIdRoute
+  '/history/': typeof HistoryIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/data' | '/exercise/$exerciseId'
+  fullPaths:
+    | '/'
+    | '/data'
+    | '/exercise/$exerciseId'
+    | '/history/$exerciseId'
+    | '/history/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/data' | '/exercise/$exerciseId'
-  id: '__root__' | '/' | '/data' | '/exercise/$exerciseId'
+  to:
+    | '/'
+    | '/data'
+    | '/exercise/$exerciseId'
+    | '/history/$exerciseId'
+    | '/history'
+  id:
+    | '__root__'
+    | '/'
+    | '/data'
+    | '/exercise/$exerciseId'
+    | '/history/$exerciseId'
+    | '/history/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DataRoute: typeof DataRoute
   ExerciseExerciseIdRoute: typeof ExerciseExerciseIdRoute
+  HistoryExerciseIdRoute: typeof HistoryExerciseIdRoute
+  HistoryIndexRoute: typeof HistoryIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +118,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExerciseExerciseIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/history/': {
+      id: '/history/'
+      path: '/history'
+      fullPath: '/history/'
+      preLoaderRoute: typeof HistoryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history/$exerciseId': {
+      id: '/history/$exerciseId'
+      path: '/history/$exerciseId'
+      fullPath: '/history/$exerciseId'
+      preLoaderRoute: typeof HistoryExerciseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +139,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DataRoute: DataRoute,
   ExerciseExerciseIdRoute: ExerciseExerciseIdRoute,
+  HistoryExerciseIdRoute: HistoryExerciseIdRoute,
+  HistoryIndexRoute: HistoryIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

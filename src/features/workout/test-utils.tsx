@@ -45,6 +45,12 @@ function withRouter(ui: ReactElement, initialPath: string) {
       path: '/exercise/$exerciseId',
       component: () => ui,
     }),
+    createRoute({ getParentRoute: () => rootRoute, path: '/history', component: () => ui }),
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path: '/history/$exerciseId',
+      component: () => ui,
+    }),
     createRoute({ getParentRoute: () => rootRoute, path: '/data', component: () => ui }),
   ])
 

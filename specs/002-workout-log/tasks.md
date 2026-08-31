@@ -132,6 +132,18 @@ requirement and no code behind it.
 - [x] T154 — `components/set-table.tsx`, the caption in `components/record-set-form.tsx`, `components/exercise-screen.tsx` recomposed · FR: FR-003, FR-014, FR-016, FR-020, FR-030
 - [x] T155 — Playwright: ramp 20 → 40 → 60, finish, start again and read the Previous column row by row · FR: FR-020, FR-024, FR-030
 
+## History, and a bar to reach it from
+
+- [x] T160 — Failing unit tests for `historyFor`: newest first, an emptied block skipped, other exercises ignored, nothing for an unknown id · FR: FR-032
+- [x] T161 [P] — Failing unit tests for `format.ts::formatWhen` and `lib/nav.ts::activeSection` · FR: FR-033
+- [x] T162 [P] — Failing component tests for the bar: three sections, and an open exercise lighting the exercises tab · FR: FR-033
+- [x] T163 [P] — Failing component tests for the history index: recency order, the session count, an exercise with no history omitted, the empty state · FR: FR-031
+- [x] T164 [P] — Failing component tests for one exercise's history: sessions newest first with their dates, sets and notes; an unknown id explained · FR: FR-023, FR-032
+- [x] T165 — `model.ts::historyFor`, with `previousBlock` rewritten on top of it; `format.ts` extracted from the exercise screen; `lib/nav.ts` · FR: FR-032, FR-033
+- [x] T166 — `components/bottom-nav.tsx`; `routes/__root.tsx` header removed; `index.html` lang and `viewport-fit` · FR: FR-033
+- [x] T167 — `components/history-index.tsx`, `components/history-screen.tsx`, the two route modules, and the link into history from the exercise screen · FR: FR-031, FR-032
+- [x] T168 — Playwright: reach history through the bar, read two sessions of one exercise, and move between all three sections · FR: FR-031, FR-032, FR-033
+
 ## Verification
 
 - [x] T080 — `pnpm verify` green · FR: —
@@ -140,6 +152,16 @@ requirement and no code behind it.
 - [x] T083 — Spec status set to `shipped`; `pnpm spec:check` clean · FR: —
 
 ## Notes from implementation
+
+- Scoping a component assertion by index (`const [newest] = getAllByRole('region')`)
+  needs a cast or a `!` to satisfy the type-aware lint, and the lint's own
+  suggestion was the `!`. The better answer was to stop indexing: querying
+  `findByRole('region', { name: /20 лютого/ })` needs neither, and asserts _which_
+  session holds which sets rather than trusting render order.
+- Adding `Link to="/history"` before the route existed was a type error, not a
+  runtime surprise — TanStack's generated route tree types the `to` prop, so a
+  link to an address the app does not have cannot compile. The same property makes
+  the test router in `test-utils.tsx` worth keeping honest.
 
 - Keying the record form on the prefill remounts it whenever those numbers change,
   which is now after most sets rather than a few. A Playwright helper that filled

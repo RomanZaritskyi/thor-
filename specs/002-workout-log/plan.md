@@ -122,6 +122,9 @@ the workout provider so `src/test/` stays feature-agnostic.
 | FR-028 | `model.ts::sortExercisesByRecency`                              | unit tests over recorded, older and never-recorded exercises; component test on render order           |
 | FR-029 | `model.ts::lastRecordedSet` + `daysBetween`                     | unit tests; component test that the label is present and absent in the right cases                     |
 | FR-030 | `model.ts::setRows` + `components/set-table`                    | unit tests over both blocks being longer; component and e2e tests reading the rows                     |
+| FR-031 | `components/history-index` + `model.ts::sortExercisesByRecency` | component tests for order, the session count, an exercise with no history, and the empty state         |
+| FR-032 | `model.ts::historyFor` + `components/history-screen`            | unit tests for order and an emptied block; component and e2e tests reading several sessions            |
+| FR-033 | `components/bottom-nav` + `lib/nav.ts::activeSection`           | unit tests over every path; component test that an open exercise lights the exercises tab              |
 
 ## Blocks (amendment)
 
@@ -224,6 +227,43 @@ The screenshots that prompted this also showed rest timers, a workout-level
 Finish/Cancel across several exercises, and _Add Exercises_. All three are already
 refused in **Out of scope**, and the premise that today's session was never
 planned is why. Only the column was taken.
+
+## History, and a bar to reach it from (amendment)
+
+`Out of scope` refused browsing anything older than the previous session, on the
+grounds that stalling was "a later question, not this one". It arrived. The
+previous block decides the next set; it cannot show that 80 kg has not moved in a
+month, and that is the question a log is kept for. Constitution II puts the answer
+here rather than in a third folder: dropping a line from `Out of scope` is the
+same feature evolving.
+
+Almost none of this is new logic. `blocksForExercise` already returns every block
+of an exercise, newest first, with its sets — it was written for `previousBlock`
+and is exactly the history query. `historyFor` is that minus blocks whose sets
+were all deleted, and `previousBlock` is **rewritten on top of it**: that rule was
+already applied privately inside `previousBlock`, and one rule in two places is one
+rule too many. `set-list` renders a session read-only just by omitting `onDelete`.
+
+`formatWhen` was a private function inside `exercise-screen.tsx`. History needs the
+same words, so it moves to `format.ts`, beside `strings.ts` where the language
+already lives, and finally gets unit tests.
+
+Navigation moves to the bottom of the screen (FR-033), which is where a thumb is;
+the top header is deleted rather than duplicated, and the height it was spending
+goes back to the set table. `activeSection` is a pure function because
+`activeProps` cannot express "`/` but also `/exercise/x`" — an open exercise must
+light the exercises tab, not none of them — and because that is the kind of rule
+that quietly breaks. It will hold the login tab without changing shape.
+
+Two shell fixes ride along, neither a requirement, both simply wrong: `index.html`
+declared `lang="en"` over an entirely Ukrainian app, which makes a screen reader
+pronounce it as English; and the viewport meta had no `viewport-fit=cover`, without
+which `env(safe-area-inset-bottom)` is zero and the new bar sits underneath the
+iPhone home indicator.
+
+History is read-only, deliberately. Today's sets are deleted on the exercise
+screen, where the run in progress is; a second delete path to the same set is a
+second path to delete the wrong one.
 
 ## Complexity budget
 

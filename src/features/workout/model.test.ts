@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   currentBlock,
+  historyFor,
   daysBetween,
   lastRecordedSet,
   sortExercisesByRecency,
@@ -338,6 +339,56 @@ const RAMP = [
   set({ id: 'p3', weightKg: 60, reps: 8 }),
   set({ id: 'p4', weightKg: 80, reps: 5 }),
 ]
+
+describe('historyFor (FR-032)', () => {
+  const older = block({
+    id: 'older',
+    date: '2026-02-10',
+    startedAt: '2026-02-10T10:00:00.000Z',
+    closedAt: '2026-02-10T10:30:00.000Z',
+  })
+  const newer = block({
+    id: 'newer',
+    date: '2026-02-20',
+    startedAt: '2026-02-20T10:00:00.000Z',
+    closedAt: '2026-02-20T10:30:00.000Z',
+  })
+
+  it('returns every session, newest first', () => {
+    const sets = [set({ id: 'a', blockId: 'older' }), set({ id: 'b', blockId: 'newer' })]
+
+    expect(historyFor([older, newer], sets, EXERCISE).map((run) => run.block.id)).toEqual([
+      'newer',
+      'older',
+    ])
+  })
+
+  it('carries each session sets, in the order recorded', () => {
+    const sets = [
+      set({ id: 'b', blockId: 'newer', loggedAt: '2026-02-20T10:05:00.000Z' }),
+      set({ id: 'a', blockId: 'newer', loggedAt: '2026-02-20T10:01:00.000Z' }),
+    ]
+
+    expect(historyFor([newer], sets, EXERCISE)[0]?.sets.map((entry) => entry.id)).toEqual([
+      'a',
+      'b',
+    ])
+  })
+
+  it('skips a session emptied by deletion', () => {
+    // Deleting every set of a run leaves nothing to read, so there is no session.
+    const sets = [set({ id: 'b', blockId: 'newer' })]
+
+    expect(historyFor([older, newer], sets, EXERCISE).map((run) => run.block.id)).toEqual(['newer'])
+  })
+
+  it('ignores other exercises, and has nothing for an unknown one', () => {
+    const other = block({ id: 'x', exerciseId: 'other' })
+
+    expect(historyFor([other], [set({ blockId: 'x' })], EXERCISE)).toEqual([])
+    expect(historyFor([newer], [set({ blockId: 'newer' })], 'nobody')).toEqual([])
+  })
+})
 
 describe('setRows (FR-030)', () => {
   it('pairs each position with what was done at it last time', () => {

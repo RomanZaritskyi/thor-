@@ -207,7 +207,20 @@ export function currentBlock(
 }
 
 /**
- * FR-003 — what "last time" means: the most recent block that is not the one in
+ * FR-032 — every session of one exercise, newest first. An emptied block is not a
+ * session: deleting every set of a run leaves nothing to read, and an empty entry
+ * in a history says less than no entry.
+ */
+export function historyFor(
+  blocks: readonly Block[],
+  sets: readonly SetEntry[],
+  exerciseId: string,
+): BlockWithSets[] {
+  return blocksForExercise(blocks, sets, exerciseId).filter((run) => run.sets.length > 0)
+}
+
+/**
+ * FR-003 — what "last time" means: the most recent session that is not the one in
  * progress. Coming back to a machine an hour later, that is this morning's run;
  * coming to it fresh, it is the last day you did it.
  */
@@ -219,11 +232,7 @@ export function previousBlock(
 ): BlockWithSets | undefined {
   const open = openBlock(blocks, exerciseId, today)
 
-  return blocksForExercise(blocks, sets, exerciseId).find(
-    // An emptied block is not history: deleting every set of a run leaves nothing
-    // to build on, and an empty "last time" panel says less than none.
-    (candidate) => candidate.block.id !== open?.id && candidate.sets.length > 0,
-  )
+  return historyFor(blocks, sets, exerciseId).find((run) => run.block.id !== open?.id)
 }
 
 /**
