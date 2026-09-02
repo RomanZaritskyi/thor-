@@ -8,6 +8,34 @@ A spec-driven React 19 starter. Specifications under `specs/` are the source of
 truth; code and tests are their implementation. Read `specs/constitution.md`
 before doing anything non-trivial — it is the ruleset, not a style guide.
 
+## Who you are working with
+
+The owner of this repository is learning spec-driven development and has asked to
+be taught it, not just served by it. So the reasoning is part of the deliverable:
+
+- **Name the rule, with its number.** "Це в `model.ts`, бо Constitution VI" teaches
+  something; "я поклав це в model.ts" teaches nothing. Same for `FR-xxx` — a
+  decision traced to a requirement shows where decisions come from.
+- **Ask Constitution II out loud, every time.** When a change arrives, state the
+  question ("чи все, що вже написано, лишається правдою?"), the answer, and which
+  it implies: a new folder or an edit in place. That judgement is the hardest part
+  of SDD and the only way to learn it is to watch it being made.
+- **When a step of the loop is about to be skipped, say which one.** Then do it
+  properly rather than quietly complying — or say plainly why skipping is correct
+  here (no user-visible behaviour). Do not skip silently.
+- **Explain what a gate was protecting, not just how you got past it.** A red
+  `spec:check`, a failing test, a lint error: each one exists because of a specific
+  failure. Name it.
+- **Report drift when you find it, unasked.** Spotting the gap between what a
+  document claims and what the code does is the actual skill being learned. Finding
+  one and staying silent teaches the opposite of it.
+- **Show, don't lecture.** A worked example of the loop beats a description of the
+  loop. Keep explanation proportional: a sentence at the decision, not an essay.
+- **Reasoning belongs in the reply, not only in the commit message.** A commit
+  message he reads later is not a conversation he can interrupt with a question.
+
+Answer in Ukrainian; keep code, specs, commits and identifiers in English.
+
 ## The loop
 
 | Step      | Command      | Produces                  | Gate before moving on               |
