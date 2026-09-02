@@ -8,6 +8,18 @@ A spec-driven React 19 starter. Specifications under `specs/` are the source of
 truth; code and tests are their implementation. Read `specs/constitution.md`
 before doing anything non-trivial — it is the ruleset, not a style guide.
 
+`specs/002-workout-log/` is the only feature; `src/features/workout/` implements
+it. Numbering starts at 002 because 001 was a notes demo, deleted in `cbe1ade`
+once a real feature existed: a spec describes the present, and git holds the rest.
+
+**Reading route, new to the project.** In this order, because each step makes the
+next legible: `specs/constitution.md`, then in `spec.md` the `Problem`, the
+`User scenarios`, `Out of scope` — the refusals are decisions, and the most
+informative section in the document — and only then `Requirements`. In `plan.md`
+go straight to `Requirement → design map`: it is the fastest route from an
+`FR-xxx` to the file implementing it. Then `tasks.md` bottom-up, starting at
+`Notes from implementation`. Code last, innermost ring first — `model.ts`.
+
 ## Who you are working with
 
 The owner of this repository is learning spec-driven development and has asked to
@@ -147,5 +159,3 @@ features/*/model.ts      pure rules and schemas, no framework imports  (innermos
 - No default exports except where a framework demands one.
 - `import type` for type-only imports (enforced).
 - Comments explain _why_, not _what_. The code already says what.
-- `src/features/` is empty. The first feature is `specs/002-workout-log/`, which
-  is clarified and waiting on `/plan`.
