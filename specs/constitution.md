@@ -1,6 +1,6 @@
 # Project constitution
 
-**Version 1.2.0 · Ratified 2026-08-30**
+**Version 1.2.1 · Ratified 2026-08-30**
 
 The rules every spec, plan and change in this repository must obey. When a plan
 conflicts with the constitution, the constitution wins — or the constitution gets
@@ -148,6 +148,9 @@ A change is done when **all** of these hold:
 The constitution changes by pull request, alone in its own commit, with the
 version bumped and a line added below saying what changed and why.
 
-| Version | Date       | Change                |
-| ------- | ---------- | --------------------- |
-| 1.0.0   | 2026-08-30 | Initial ratification. |
+| Version | Date       | Change                                                                                                                                  |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0.0   | 2026-08-30 | Initial ratification.                                                                                                                   |
+| 1.1.0   | 2026-08-30 | Principle II added — one spec per feature, changed behaviour edited in place. Former II–IX renumbered III–X.                            |
+| 1.2.0   | 2026-08-31 | Principle II's question widened to everything a spec asserts — scenarios, `Out of scope`, edge cases — not only its requirements table. |
+| 1.2.1   | 2026-09-02 | Records the 1.1.0 and 1.2.0 amendments, which were made without the row this section requires. No rule changed.                         |
